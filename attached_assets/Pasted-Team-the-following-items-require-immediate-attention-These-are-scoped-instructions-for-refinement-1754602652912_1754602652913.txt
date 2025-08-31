@@ -1,0 +1,99 @@
+Team — the following items require immediate attention. These are scoped instructions for refinement and bug resolution. Do not introduce new logic, flows, or UX adjustments unless specified below. Simulate all flows end-to-end from a user perspective to validate behavior.
+1. 🧾 JOB → INVOICE FLOW (BLOCKING UX ISSUE)
+
+Current behavior:
+Clicking “Create Invoice” from a job either fails silently or throws.
+
+Required implementation:
+
+    Trigger invoice modal directly from the Job context
+
+    Auto-populate invoice fields with job data: client, job name, total amount, notes (if any)
+
+    Allow user to review/edit, then Send or Save
+
+This must be a fully functional Job → Invoice pipeline. Do not rely on empty states or placeholder forms. This interaction is core to the user journey and must be seamless.
+2. ✉️ INVOICE DELIVERY — CLARIFY TECHNICAL FLOW
+
+Before we refine the invoice UX any further, clarify the full scope of the "Send Invoice" feature:
+
+    In production (non-demo), what exactly happens when a user sends an invoice?
+
+    Is email delivery implemented? If so, which provider (SendGrid, SMTP, etc.) is integrated?
+
+    Are invoices sent as:
+
+        PDF attachments?
+
+        Text-only email?
+
+        Hosted invoice links?
+
+    Does “Send” only update the invoice status (draft → sent) or trigger outbound delivery?
+
+    What API or backend logic governs this?
+
+If this is not fully implemented yet, respond with the proposed design or technical requirements.
+3. 📊 DASHBOARD FILTERS — INVALID OR INCONSISTENT
+
+Invoices and expenses created today are not appearing in dashboard widgets.
+
+You must:
+
+    Audit the filter logic behind:
+
+        “Outstanding Invoices”
+
+        “Logged Expenses”
+
+    Confirm whether it uses createdAt, date, status, or other metadata
+
+    Ensure logic includes records created or dated for today, and are not silently omitted due to filtering mismatches
+
+Use logs or direct DB queries to validate inclusion criteria.
+
+Fix any widget that fails to:
+
+    Show valid data added today
+
+    Update live without refresh
+
+4. 🔁 RE-LOGIN FLOW STILL BROKEN
+
+Despite previous confirmation, the onboarding wizard still flashes or appears briefly on login, even when isOnboarded === true.
+
+Required behavior:
+
+    On sign-in, check isOnboarded directly from DB
+
+    If true, route immediately to /dashboard
+
+    The onboarding flow must not mount or flash for returning users
+
+Simulate the full login flow as a real onboarded user (demo and non-demo). Validate redirection, component mounts, and any UI state sync.
+5. 📧 WELCOME EMAIL — REMOVE DEMO CODE
+
+Replace the demo code in the welcome email immediately.
+
+New copy:
+
+    “Want early access? Just reply to this email and request your demo link. We’ll send it through manually while the platform is being refined.”
+
+Do not mention access codes or automated onboarding while we’re in refinement mode.
+✅ REQUIRED CONFIRMATION ONCE COMPLETE
+
+Confirm completion and testing of:
+
+Working Job → Invoice modal with pre-filled data
+
+Technical breakdown of “Send Invoice” behavior (demo + prod)
+
+Dashboard widgets correctly reflect today’s invoices + expenses
+
+Re-login no longer triggers onboarding wizard
+
+    Welcome email updated
+
+Simulate all user flows yourself. Do not consider tasks complete until you've verified the behavior from the user perspective.
+
+Tag me when fully deployed and production-tested.

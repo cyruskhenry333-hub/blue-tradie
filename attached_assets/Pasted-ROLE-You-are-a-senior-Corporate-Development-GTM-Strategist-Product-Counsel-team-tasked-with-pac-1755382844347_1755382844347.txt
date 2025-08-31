@@ -1,0 +1,49 @@
+ROLE: You are a senior Corporate Development + GTM Strategist + Product Counsel team tasked with packaging and pitching the Blue Tradie platform (MVP live, roadmap confirmed) for **global rights sale** to a major strategic acquirer (e.g., Bunnings, Sydney Tools, Mitre 10, Total Tools, Reece, PlaceMakers, or international equivalents such as Home Depot, Lowe’s, Kingfisher, Hilti). Produce EVERYTHING below in one coherent deliverable set.
+
+NON-NEGOTIABLES (use verbatim in docs where relevant):
+- Preferred deal ask: AUD $12.5M global acquisition price + **10% perpetual royalty** on all subscription and transactional revenue generated from Blue Tradie or any derivative product worldwide.  
+- Alternative paths (present as option set B/C):
+  B) Global sale outright (no royalties): AUD $20M fixed purchase price.  
+  C) Exclusive Global License: AUD $8M upfront + 15% perpetual royalty on subscription revenue.  
+- Cyrus retains brand credit as **Founder of Blue Tradie** in all external communications.  
+- Include **Mutual NDA** requirement prior to code access.  
+
+KEY FEATURES TO INCLUDE IN ALL MATERIALS:
+- **AI Business Advisors**: embedded AI agents act as accountants, marketers, schedulers, and legal advisors in one platform.  
+- **AI Automation**: invoices, quotes, expenses, job scheduling, reminders, follow-ups, client comms, reporting—all automated to reduce paperwork.  
+- **Dynamic Token System**: usage-based AI credits for flexibility and scalability.  
+- **Smart Onboarding**: ultra-simple tradie-first setup; mobile-first design; minimal friction.  
+- **Directory & Network**: tradie-to-tradie referrals, rating/review, and jobs board integration.  
+- **Future Roadmap**:  
+  - AI voice input & voice-to-invoice  
+  - AR jobsite scanning & quote generation  
+  - Team management + payroll automation  
+  - Marketplace tie-ins for tools, materials, finance, insurance  
+  - Robotics integration pathway (see “Robotix Trades Guild” vision)  
+
+STRATEGIC ANGLE TO EMPHASIZE:
+- Blue Tradie as the **“AI Operating System for Trades”**—not just software, but an AI-powered ecosystem.  
+- For acquirers: the platform captures tradies globally into **their retail ecosystem**, driving tool/material sales, loyalty, and embedded services (finance, insurance, training).  
+- Robotics Vision: “Robotix Trades Guild” seeded from Blue Tradie’s community, ensuring tradies themselves shape the robotics future—reducing union risk while unlocking innovation.  
+
+DELIVERABLES:
+1. 12-slide Global Sale Deck: Problem, Solution, Product Demo, Features (AI advisors + automation front and center), Roadmap, Buyer Synergies, Economics, Robotics Guild Vision, Deal Options.  
+2. One-page Executive Summary (global deal focused).  
+3. Valuation Memo: replacement cost, strategic comps (ServiceM8, Tradify, Fergus, simPRO, MYOB, Intuit QuickBooks integrations, global SaaS comps), plus global TAM.  
+4. Deal Term Sheets (Options A, B, C above).  
+5. Integration Plan (global retailer rollout, loyalty integration, in-store sign-ups, QR-driven onboarding).  
+6. Tech Due-Diligence Brief.  
+7. Financial Model (user growth, ARPU $15–25, 50k–500k seats, royalty flows).  
+8. Robotics Guild Vision Doc: ≤100 days roadmap to launch global tradie-led robotics body via Blue Tradie community.  
+9. Outreach Pack: target buyers, email/DM scripts, objection handling (esp. royalties).  
+10. Press Release Draft announcing global acquisition.  
+
+TONE & STYLE:  
+Crisp, commercial, visionary. Position Blue Tradie as **the category-defining AI platform for trades worldwide.** Emphasize speed-to-market, AI-first differentiation, and robotics future-proofing.  
+
+SUCCESS CRITERIA:  
+Buyer can clearly see:  
+(a) why AI advisors + automation make Blue Tradie defensible,  
+(b) why global rights give them immediate category leadership,  
+(c) how royalty aligns incentives,  
+(d) how the Robotics Guild secures long-term labor cooperation.  

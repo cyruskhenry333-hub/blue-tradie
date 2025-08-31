@@ -1,0 +1,55 @@
+Great work on implementing the Stripe payment system and webhook. A few confirmations + next steps:
+
+1) Env sanity
+
+I’ve set APP_BASE_URL=https://www.bluetradie.com (note the https:// scheme).
+
+Secrets are in place: STRIPE_SECRET_KEY (test), STRIPE_WEBHOOK_SECRET, SENDGRID_API_KEY, EMAIL_FROM=support@bluetradie.com, EMAIL_FROM_NAME=Blue Tradie Billing.
+
+2) Please run an E2E proof (and record it)
+
+Create a test invoice → POST /api/invoices/:id/paylink → open Checkout.
+
+Pay using Stripe test card 4242 4242 4242 4242 (any future expiry/CVC).
+
+Webhook should set payment_status='paid', set paid_at, save stripe_payment_intent_id.
+
+Dashboard KPIs must update immediately and persist after logout/login.
+
+Send invoice email (POST /api/invoices/:id/email) → confirm outbox/log shows to/subject and View & Pay button with the Checkout URL (or paid receipt if already paid).
+
+Provide a 60–90s screen recording of the full flow above.
+
+3) Acceptance checks (please confirm each)
+
+APP_BASE_URL used for success/cancel links:
+
+Success: https://www.bluetradie.com/invoice/success?inv={{id}} (or your implemented route)
+
+Cancel: https://www.bluetradie.com/invoice/cancel?inv={{id}}
+
+Webhook handler: signature verified; idempotent via event.id (ignore duplicates).
+
+DB: payment_status, email_to, email_sent_at, stripe_session_id, stripe_payment_intent_id, paid_at populated correctly.
+
+Authorization: only the owning user (or admin) can hit /api/invoices/:id/email and /api/invoices/:id/paylink.
+
+Playwright E2E added to CI:
+
+create invoice → pay link → simulate or complete test checkout → invoice PAID; KPIs persist after re-login,
+
+email send → outbox/log contains correct pay link,
+
+regression: logout/login never re-triggers onboarding; session stable.
+
+4) Minor polish to include (no feature creep)
+
+Success/cancel pages: basic copy + a “Back to dashboard” button.
+
+Email template: simple HTML + text fallback (subject: Invoice {{invoice_number}} from {{business_name}}) with a clear “View & Pay Invoice” button. Attach PDF if supported; otherwise include a Download PDF link.
+
+5) Deliverables
+
+Passing Playwright run, short screen recording, and a brief README update covering: env vars, how to run E2E locally (test mode), how to switch Stripe to live, and where to see the email outbox/log.
+
+After this is confirmed, I’ll send a follow-up prompt to add subscription events behind a feature flag (FEATURE_SUBSCRIPTIONS=false by default) so we can log them now and turn on account state updates later.

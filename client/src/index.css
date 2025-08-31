@@ -1,0 +1,259 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(248, 39%, 98%);
+  --foreground: hsl(207, 26%, 17%);
+  --muted: hsl(210, 40%, 98%);
+  --muted-foreground: hsl(215, 13.8%, 34.1%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(207, 26%, 17%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(207, 26%, 17%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --primary: hsl(213, 88%, 59%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(210, 40%, 98%);
+  --secondary-foreground: hsl(207, 26%, 17%);
+  --accent: hsl(210, 40%, 98%);
+  --accent-foreground: hsl(207, 26%, 17%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(60, 9%, 98%);
+  --ring: hsl(213, 88%, 59%);
+  --radius: 0.5rem;
+  
+  /* Blue Tradie specific colors */
+  --tradie-blue: hsl(213, 88%, 59%);
+  --tradie-orange: hsl(21, 90%, 48%);
+  --tradie-success: hsl(159, 75%, 38%);
+  --tradie-warning: hsl(32, 95%, 44%);
+  --tradie-danger: hsl(0, 84%, 60%);
+  --tradie-gray: hsl(215, 14%, 42%);
+  --tradie-light: hsl(210, 40%, 98%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(213, 88%, 59%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 5%, 84%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(220, 26%, 94%) 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn-tradie-primary {
+    @apply bg-[hsl(213,88%,59%)] hover:bg-[hsl(213,88%,54%)] text-white font-medium px-6 py-3 rounded-lg transition-colors;
+  }
+  
+  .btn-tradie-orange {
+    @apply bg-[hsl(21,90%,48%)] hover:bg-[hsl(21,90%,43%)] text-white font-medium px-6 py-3 rounded-lg transition-colors;
+  }
+  
+  .card-tradie {
+    @apply bg-white rounded-xl shadow-sm border border-[hsl(214,32%,91%)] hover:shadow-md transition-shadow;
+  }
+  
+  .agent-card-accountant {
+    @apply border-l-4 border-l-[hsl(159,75%,38%)];
+  }
+  
+  .agent-card-marketing {
+    @apply border-l-4 border-l-[hsl(21,90%,48%)];
+  }
+  
+  .agent-card-coach {
+    @apply border-l-4 border-l-[hsl(213,88%,59%)];
+  }
+  
+  .agent-card-legal {
+    @apply border-l-4 border-l-[hsl(0,84%,60%)];
+  }
+  
+  .agent-card-branding {
+    @apply border-l-4 border-l-[hsl(280,100%,70%)];
+  }
+  
+  .status-paid {
+    @apply bg-[hsl(159,75%,38%,0.1)] text-[hsl(159,75%,38%)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .status-pending {
+    @apply bg-[hsl(32,95%,44%,0.1)] text-[hsl(32,95%,44%)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .status-overdue {
+    @apply bg-[hsl(0,84%,60%,0.1)] text-[hsl(0,84%,60%)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .chat-bubble-user {
+    @apply bg-[hsl(213,88%,59%)] text-white rounded-2xl px-4 py-2 max-w-[70%] ml-auto;
+  }
+  
+  .chat-bubble-agent {
+    @apply bg-white border border-[hsl(214,32%,91%)] rounded-2xl px-4 py-2 max-w-[80%];
+  }
+}
+
+@layer utilities {
+  .text-tradie-blue {
+    color: hsl(213, 88%, 59%);
+  }
+  
+  .text-tradie-orange {
+    color: hsl(21, 90%, 48%);
+  }
+  
+  .text-tradie-success {
+    color: hsl(159, 75%, 38%);
+  }
+  
+  .text-tradie-warning {
+    color: hsl(32, 95%, 44%);
+  }
+  
+  .text-tradie-danger {
+    color: hsl(0, 84%, 60%);
+  }
+  
+  .bg-tradie-blue {
+    background-color: hsl(213, 88%, 59%);
+  }
+  
+  .bg-tradie-orange {
+    background-color: hsl(21, 90%, 48%);
+  }
+
+  /* Enhanced Tour Highlighting */
+  .tour-highlight {
+    position: relative;
+    border: 2px solid hsl(213, 88%, 59%) !important;
+    border-radius: 8px !important;
+    animation: tour-pulse 2s infinite;
+    z-index: 10;
+  }
+
+  .tour-highlight::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: hsl(213, 88%, 59%, 0.1);
+    border-radius: 12px;
+    z-index: -1;
+    animation: tour-glow 2s infinite alternate;
+  }
+
+  @keyframes tour-pulse {
+    0%, 100% {
+      border-color: hsl(213, 88%, 59%);
+      box-shadow: 0 0 15px hsl(213, 88%, 59%, 0.3);
+    }
+    50% {
+      border-color: hsl(213, 88%, 70%);
+      box-shadow: 0 0 25px hsl(213, 88%, 59%, 0.5);
+    }
+  }
+
+  @keyframes tour-glow {
+    0% {
+      background: hsl(213, 88%, 59%, 0.1);
+    }
+    100% {
+      background: hsl(213, 88%, 59%, 0.2);
+    }
+  }
+
+  /* Smooth scrolling for tour navigation */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Tour step transitions */
+  .tour-step-transition {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  }
+
+  /* Tour tooltip arrows */
+  .tour-tooltip-container {
+    pointer-events: all !important;
+    z-index: 2147483647 !important;
+    position: relative;
+  }
+
+  .tour-tooltip-container.dragging {
+    transition: none !important;
+  }
+
+  /* Arrow positioning */
+  .tour-tooltip-container::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+    z-index: -1;
+  }
+
+  /* Top arrow (tooltip positioned below target) */
+  .tour-tooltip-container[data-arrow="top"]::before {
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-bottom-color: #F3701A;
+  }
+
+  /* Bottom arrow (tooltip positioned above target) */
+  .tour-tooltip-container[data-arrow="bottom"]::before {
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-top-color: #F3701A;
+  }
+
+  /* Left arrow (tooltip positioned to the right of target) */
+  .tour-tooltip-container[data-arrow="left"]::before {
+    left: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right-color: #F3701A;
+  }
+
+  /* Right arrow (tooltip positioned to the left of target) */
+  .tour-tooltip-container[data-arrow="right"]::before {
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left-color: #F3701A;
+  }
+}

@@ -1,0 +1,57 @@
+Hey team — we’re close to completion, but two key issues still remain and need to be solved fully and properly, not just patched.
+
+Please read this carefully, simulate the entire user journey, and confirm visually and functionally that everything is working as intended.
+🟥 1. BUTTON VISUAL CONFIRMATION NOT WORKING
+
+Problem:
+The “Activate Your Demo Access” button sends the demo code email correctly — but the user doesn’t see any visual change after clicking. This creates uncertainty.
+
+I’ve tested it in Gmail, and the button does not change even though the backend process fires correctly.
+🧠 What I need you to do:
+
+    Simulate a full live test from the user's perspective
+
+    Confirm the actual behavior of the button inside the inbox after it’s clicked
+
+    Check if any part of the JS or interaction is being blocked by Gmail or other major email clients
+
+    Update it so that visibly and functionally, the button:
+
+        Updates its text to: ✅ Demo Access Sent! Check your inbox
+
+        Is disabled after the click
+
+        Changes the background color (green is fine: #10b981)
+
+        Updates the cursor to not-allowed or default
+
+Please ensure this works in a real email environment like Gmail, not just inside the preview or staging.
+
+If Gmail blocks this kind of interactivity, provide me a fallback solution that still offers visual confirmation.
+🟧 2. INCORRECT URL IN DEMO EMAIL
+
+Issue:
+The demo access email still includes a login link pointing to:
+https://bluetradie.replit.app/demo-login
+
+This is NOT the correct domain — we want users going to the public site.
+✅ Please update the demo email to say:
+
+    Go to https://www.bluetradie.com
+    Click “Demo Login” in the top right corner
+    Enter your name, email, and demo code
+
+You don’t need to deep link to the login page — just direct them to the homepage with simple instructions.
+🔁 What I Expect From You:
+
+    Simulate a full live test using a real test email (e.g., Kane or ra@ address)
+
+    Validate that all changes are visible, functional, and user-friendly
+
+    If anything is blocked or doesn’t work due to email client limitations, provide a workaround
+
+    Confirm completion only after testing real-world behavior, not just deploying the code
+
+Once those are both resolved and verified, I’ll do one final check and we’re ready to launch.
+
+Thanks!

@@ -1,0 +1,92 @@
+Hey Replit team 👋
+
+We’d like to restructure the Blue Tradie beta rollout using a 3-tier early access system for the first 100 users, followed by a waitlist system. Please implement the following logic and flows:
+🚀 BETA STRATEGY: 3 TIERS (LIMITED TO FIRST 100 USERS)
+
+Tier 1: Founding 25
+
+    🔓 Lifetime access to Phase 1 features
+
+    🔖 Tag: "Founding Member – Lifetime Access"
+
+    🎯 Primary objective: high-trust users who help shape the product
+
+    🧾 No future charges for Phase 1 access
+
+Tier 2: Early Supporter (Next 35)
+
+    ⏳ 12 months of free access to all Phase 1 features
+
+    💸 Plus: 40% lifetime discount on any future paid plans
+
+    🔖 Tag: "Early Supporter – 1 Year Free + Lifetime Discount"
+
+Tier 3: Beta Tester (Final 40)
+
+    ⏳ 3 months of free access to all Phase 1 features
+
+    💸 Plus: 20% lifetime discount on any future paid plans
+
+    🔖 Tag: "Beta Tester – 3 Months Free + Lifetime Discount"
+
+🧠 UX + FUNCTIONALITY TO IMPLEMENT
+
+    Smart Tier Assignment
+
+        System automatically assigns users to a tier based on how many spots are left (1–100).
+
+        Auto-advances once a tier is filled (e.g., from Founding to Early Supporter).
+
+        Each tier should show a live progress bar or counter (e.g. “18/25 Founding Spots Taken”).
+
+    Custom Tier Messaging
+
+        After sign-up, users see a custom confirmation message based on their tier.
+
+        Add tier-specific badges/labels on the user dashboard (and optionally in emails).
+
+    Timer Logic
+
+        Tier 2 and Tier 3 free trial clocks should start from the full public launch date, not the signup date.
+
+        Please ensure the trial countdown is triggered only after we mark the product as “live.”
+
+    Waitlist After 100 Users
+
+        Once 100 users are onboarded, redirect new signups to a simple waitlist landing page.
+
+        Collect name and email (optional: ask “Why do you want early access?”).
+
+        Add admin visibility for managing waitlist entries.
+
+    Lifetime Discount Logic
+
+        Ensure Tier 2 and Tier 3 users are tagged with their lifetime discount (40% or 20%).
+
+        System should apply their discount automatically at checkout, for any future paid plans.
+
+        Let us know if this is better handled manually via Stripe or can be built into the app’s logic.
+
+🔧 Admin + Monitoring Needs
+
+    Admin dashboard should show:
+
+        Real-time count of users in each tier
+
+        Waitlist entries (sortable/exportable if possible)
+
+    Optional: ability to manually reassign users between tiers (e.g. promote a user to Founding tier)
+
+❓Open Questions for Replit
+
+    Can we delay trial start for Tier 2 & 3 until launch date?
+
+    Can lifetime discounts be embedded into user accounts or checkout logic?
+
+    Should the waitlist trigger an automated onboarding flow once spots reopen or product launches?
+
+    Do you see any technical risks or improvements to this rollout structure?
+
+Let us know once implemented — and if you need tier-specific copy or onboarding banners, we’re happy to provide.
+
+Thanks legends 💙🛠️

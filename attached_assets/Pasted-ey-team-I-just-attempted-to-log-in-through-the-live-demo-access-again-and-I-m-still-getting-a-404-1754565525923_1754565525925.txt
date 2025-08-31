@@ -1,0 +1,75 @@
+ey team — I just attempted to log in through the live demo access again, and I'm still getting a 404 error.
+
+We need to get this resolved now, but please read all the instructions carefully — no assumptions, no speculative fixes, no skipped steps.
+❗️Objective:
+
+Ensure that when a user logs in using the demo access form with a valid demo code, they are taken into the onboarding experience of the platform — just like a real user — without hitting a 404 or auth block.
+✅ What You Must Do (Please follow this exactly):
+1. Use my demo credentials to simulate the entire user experience:
+
+    Full Name: Cyrus Henry
+
+    Email: cyruskhenry333@gmail.com
+
+    Demo Code: Demo14
+
+Walk through the actual live front-end flow as a user would:
+
+    Go to the live demo login page
+
+    Input the above details
+
+    Click submit
+
+    Observe what happens after clicking submit
+
+❗️Do not simulate via backend or dev-only interface — use the public-facing live user flow that external users will experience.
+2. If a 404 or error still occurs:
+
+Manually check the following in order:
+
+    ✅ Is the demo code being validated correctly in the backend?
+
+    ✅ Is a session or token being generated to simulate login?
+
+    ✅ Is the route being redirected to the correct page after submission?
+
+    ✅ Does the demo login flow create a temporary authenticated experience?
+
+    ✅ Is there a missing route (e.g. /onboarding or /dashboard) that needs to be defined in the router?
+
+    ✅ Is the demoAccess.ts or related handler completing execution or hitting a redirect block?
+
+    ✅ Are demo users being routed through middleware that expects full authentication and is blocking them?
+
+3. Fix Only What’s Necessary:
+
+Please do not:
+
+    Change global auth
+
+    Rewrite unrelated flows
+
+    Add new features
+
+    Guess the problem
+
+Just fix the demo login flow so that a valid demo code:
+
+    Bypasses full auth
+
+    Starts the onboarding flow
+
+    Allows a seamless demo experience
+
+✅ End Goal:
+
+When a user enters their name, email, and demo code:
+
+    They are taken straight into the onboarding flow
+
+    They can explore and use the app
+
+    No 404, no auth error, no redirect failure
+
+Let me know once you’ve done this full simulation and confirmed it’s working exactly as described. Thanks.

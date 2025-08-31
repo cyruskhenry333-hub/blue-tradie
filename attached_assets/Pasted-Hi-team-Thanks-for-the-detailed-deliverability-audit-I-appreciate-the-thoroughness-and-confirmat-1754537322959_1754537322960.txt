@@ -1,0 +1,58 @@
+Hi team,
+
+Thanks for the detailed deliverability audit — I appreciate the thoroughness and confirmation that the domain authentication issue has now been resolved.
+
+However, the core issue still remains unresolved:
+
+    When I submit the live sign-up form, the system is skipping the welcome email, and only the demo access email is being sent.
+
+🔍 Here's what needs to be fixed now:
+1. 🔄 Fix the email flow order
+
+    The first email that should be sent immediately after form submission is the:
+
+        Welcome Email from the VIP Sign-Up Flow – Aug 2025
+
+    The Demo Access Email should only be triggered after clicking the CTA button inside the Welcome Email (i.e. the “Activate Your Demo Access” button)
+
+Right now, that logic is broken — it's bypassing the welcome email entirely.
+✅ Please confirm and check the following:
+
+    Is sendWelcomeEmail() actually being called on form submission?
+
+        Run a live test and check logs to see if the welcome email is being triggered at all when the form is submitted.
+
+        Log the function call with timestamp and email to confirm.
+
+    Confirm only the Welcome Email is triggered immediately after signup
+
+        Do not send the demo email unless the user clicks the CTA in the Welcome Email.
+
+    Verify the logic in waitlistService.addToWaitlist()
+
+        Ensure the correct function is calling the correct email template (welcome) and not triggering the demo access email too early.
+
+    SendGrid activity logs
+
+        Please provide the SendGrid activity log or console output confirming whether the welcome email is ever triggered at all for recent signups.
+
+🚫 What Should NOT Be Happening:
+
+    The demo access email should not be the first thing the user receives.
+
+    The welcome email must be the entry point into the email flow.
+
+    No email should be created or sent outside of the locked VIP Sign-Up Flow – Aug 2025
+
+Please run another full end-to-end signup test using a real email (e.g. mine), and confirm that:
+
+    The signup triggers only the welcome email
+
+    The demo access email only sends after the CTA is clicked
+
+    Both use the correct templates
+
+Let me know once that’s fully verified. I’ll test again right after.
+
+Thanks,
+Cyrus

@@ -1,0 +1,124 @@
+We need to pause public exposure and stabilize before further testing. Right now the app is live in a broken state — this is not acceptable for production. Please action the following immediately:
+
+1. Re-enable Existing Coming Soon Wall
+
+We already built a Coming Soon password gate in the codebase. Do not create a new one — find the existing implementation and re-enable it.
+
+The gate must sit in front of the homepage and all app routes.
+
+Only /health (uptime checks) should bypass.
+
+Waitlist must remain disabled.
+
+Anti-indexing is already implemented (meta noindex, X-Robots-Tag, robots.txt) — leave as is.
+
+The wall must remain active until I explicitly confirm we are ready to launch publicly.
+
+2. Critical Fix: Onboarding Flow Consistency
+
+Observed issue:
+
+After demo login, a page reload landed me in dashboard.
+
+Clicking “Home” redirected me to the main user dashboard.
+
+The tour started even though onboarding was never completed.
+
+Required changes:
+
+Server-side onboarding gate:
+
+All routes (except /onboarding, /auth/*, /demo/*) must enforce onboarding_complete.
+
+If incomplete → 302 redirect to /onboarding.
+
+This must be server-side; client-only guards are not acceptable.
+
+Single source of truth:
+
+Confirm the canonical field (org_user.onboarding_complete or org.settings.onboarding_complete).
+
+All code (middleware + UI) must reference this one field.
+
+Demo flow alignment:
+
+Demo sessions must either remain in a demo org with onboarding_complete=true, or respect the same onboarding gate as any other org.
+
+If Home or org switching occurs, the server must re-check and redirect if onboarding is incomplete.
+
+No silent context switching.
+
+Tour trigger logic:
+
+Tour must only launch once onboarding_complete === true.
+
+If it should run during onboarding, trigger it explicitly from onboarding steps, not dashboard mount.
+
+Redirect/session consistency:
+
+Magic-link verify must set cookies with:
+Secure; HttpOnly; SameSite=Lax; Domain=.bluetradie.com; Path=/
+
+Redirect only to the chosen canonical host (either bluetradie.com or www.bluetradie.com, not both).
+
+Share Set-Cookie + Location headers from the verify response.
+
+3. New Process: Definition of Done (DoD) & Proof Pack
+
+Going forward, “working” means all of the following:
+
+Definition of Done:
+
+Passes Smoke Test v1 (sign-up → demo login → trial → onboarding → job/expense/invoice → send → Stripe test payment → webhook update → trial expiry → upgrade).
+
+No regressions in core flows.
+
+Verified in the production environment (no env drift).
+
+Proof Pack required with every “done” message:
+
+Magic link used (redacted), final URL + redirect chain.
+
+Response headers for verify request (Set-Cookie + Location).
+
+60-sec screen recording of full flow (sign-up → login → onboarding → dashboard).
+
+Stripe/SendGrid webhook event IDs.
+
+DB rows before/after showing subscription + onboarding state.
+
+Screenshot of console/network tab (no red errors).
+
+Automated test:
+
+Add a minimal Playwright E2E test for demo login → onboarding → dashboard. Provide the file + run output.
+
+If automation isn’t ready, attach a Cypress/Playwright recorded run proving the flow works.
+
+4. Deliverables Needed Back
+
+Confirmation that the existing Coming Soon wall has been re-enabled and is now in front of the homepage/app.
+
+Path + snippet of the middleware enforcing onboarding gate.
+
+The canonical field/table for onboarding completion.
+
+Snippet of tour trigger condition.
+
+Magic-link verify response headers (token redacted).
+
+Acceptance Criteria
+
+In incognito: sign-up with demo link → always redirected to /onboarding until finished.
+
+Clicking Home/org switch cannot bypass onboarding.
+
+Tour does not start until onboarding is completed.
+
+Session stable across reload.
+
+Coming Soon wall active until I explicitly approve public launch.
+
+Every “done” task accompanied by a Proof Pack.
+
+Please confirm when the existing Coming Soon wall is back online, then proceed with the onboarding + tour fixes under this new process.

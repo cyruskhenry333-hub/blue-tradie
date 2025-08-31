@@ -1,0 +1,67 @@
+Thanks for the detailed breakdown and implementation progress — really solid work on addressing all the core issues. A few confirmations and next requests:
+✅ Confirmed Fixes (To Be Retested)
+
+Edit Job functionality implemented — will test the form handling and backend update shortly
+
+Invoice sending added — will verify email/send logic and button feedback
+
+Dashboard “Jobs This Month” now includes all scheduled jobs — will test with a few varied job dates
+
+“View All” buttons on dashboard now functional — will confirm routes work correctly
+
+    Cache invalidation appears improved — will test by adding/editing data across modules
+
+🔁 Still Needs Confirmation / Testing:
+
+    Re-login flow
+    → Please confirm:
+
+    Have you now fixed the issue system-wide, not just for demo logins?
+
+    Is isOnboarded respected on any valid session (demo or real user)?
+    I’m still experiencing onboarding flow appearing again after re-login — this was the original bug and must be fully resolved.
+
+    Edit Functionality for Invoices and Expenses
+    → You’ve confirmed Edit for Jobs — please clarify:
+
+    Is Edit working for Invoices and Expenses too?
+
+    If not implemented yet, can you confirm ETA or flag if it's a limitation?
+
+    Invoice Sending:
+    → Please clarify:
+
+    Is the "send" function using email, link generation, or internal status update only?
+
+    If there’s no email integration yet, add a placeholder message or flag the limitation clearly in UI.
+
+    Client Book Total Value
+    → I noticed this wasn’t mentioned in your summary. Can you confirm:
+
+    Is it fixed?
+
+    Is it accurately summing scheduled/completed jobs?
+
+    Is formatting consistent?
+
+📋 Test Checklist for You to Run (before I check):
+
+Login with demo and real users → confirm no onboarding reappears
+
+Create/edit job → confirm edit reflects instantly on dashboard and client book
+
+Create/edit invoice → send invoice and confirm success message
+
+Create/edit expense → confirm dashboard reflects updates immediately
+
+Click all View All and Back to Dashboard buttons → confirm routes are valid
+
+    Check total value field in Client Book → confirm correct summing
+
+🚫 Final Reminder
+
+Once again — please do not add, assume, or patch any extra logic or UI flow unless confirmed.
+
+If something is not working or seems missing, let me know first before building around it. We’re at a polishing phase, so precision and QA are the priority now.
+
+Let me know once the full set is tested and confirmed working. I’ll do a full pass afterward.

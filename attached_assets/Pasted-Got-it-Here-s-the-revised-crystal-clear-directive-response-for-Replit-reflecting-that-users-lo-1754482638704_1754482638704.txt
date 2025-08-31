@@ -1,0 +1,80 @@
+Got it. Here's the revised, crystal-clear directive response for Replit — reflecting that users **log in with their name, email, and demo code**, **not** a username/password:
+
+---
+
+**🛠️ TO: Replit Team — Fix Button Functionality & Email Visibility**
+
+Thanks for the update. I’ve reviewed the latest version of the welcome email and there are still two key issues that need to be fixed immediately.
+
+---
+
+## 🔴 ISSUE 1: Button Still Not Triggering Automated Demo Access Email
+
+### ❌ Current Problem:
+
+* The **“Activate Your Demo Access”** button **is not triggering the follow-up email** with the user’s demo code and login instructions.
+* It changes visually (e.g. turns grey or says “Email Sent”), but **no demo credentials email is actually sent**.
+
+---
+
+### ✅ What the Button *Must* Do:
+
+When a user clicks the **“Activate Your Demo Access”** button:
+
+1. It should trigger an API call to `/api/waitlist/request-early-access` or whichever backend endpoint is managing the demo code issuance.
+
+2. This API call should:
+
+   * Assign the next available **demo code**
+   * Record the activation in the database
+   * Send an **automated email to the user** that includes:
+
+     * Their **assigned demo code** (e.g. Demo15)
+     * Instructions to log in using:
+
+       * Their **email address**
+       * Their **full name**
+       * Their **demo code**
+     * A **link to the platform**
+     * A short note explaining it's a live trial
+
+3. After this action is successful, the button should visually update to show something like:
+
+   > ✅ Demo Access Sent!
+
+---
+
+## 🔴 ISSUE 2: Email Content Is Being Collapsed or Hidden in Gmail
+
+### ❌ Current Problem:
+
+* In Gmail, a portion of the email (including the activation section) is being **collapsed or hidden** behind the “…” clip.
+
+---
+
+### ✅ What Needs to Be Done:
+
+* Ensure the full welcome email content is **visible by default** in all major email clients (Gmail, Outlook, Apple Mail, etc.).
+* Avoid using any HTML structure (e.g. deep nesting, large inline styles) that might trigger Gmail’s clipping behavior.
+* Make sure the email renders responsively and completely, especially on mobile and desktop Gmail.
+
+---
+
+## 📌 Final Notes:
+
+* The system architecture is fine — I **do not want to change** the overall flow or introduce new pages.
+* I only want the **button functionality fixed** and the **welcome email content fully visible**.
+* No login credentials (username/password) are needed — users **log in using their full name, email, and demo code** only.
+
+---
+
+## ✅ ACTION CHECKLIST:
+
+1. ✅ Fix the activation button to trigger the demo code + login instruction email
+2. ✅ Make sure the email content is not clipped in Gmail
+3. ✅ Update the follow-up demo email to reflect login via name, email, and demo code
+4. ✅ Confirm full functionality works live and is testable end-to-end
+
+Please confirm once this is working correctly — or let me know if you need anything further from my end.
+
+Thanks!

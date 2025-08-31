@@ -1,0 +1,133 @@
+Absolutely. Here’s a revised and tactfully worded prompt you can send to Replit. It clearly frames your suggestions, asks for confirmation before changes, and emphasizes caution with existing functionality:
+
+---
+
+**📩 Prompt for Replit:**
+
+Hey team,
+
+We’ve taken time to fully review our current discount and reward structure for Blue Tradie. Below are **suggested updates** we believe will create more clarity and congruency across the platform.
+
+Before anything is changed, could you please review and confirm whether these are good suggestions from a technical and implementation perspective?
+
+If you do proceed with implementing any of these updates, **please be cautious** not to delete or break any currently functioning logic or UI. We’d like all changes made carefully and incrementally to avoid regressions. Let us know what your plan would be if these are approved.
+
+---
+
+### ✅ Suggested Updates to Discount & Reward System
+
+---
+
+### ❌ 1. **Remove Beta Tier System (Deprecated)**
+
+We are no longer using the Beta Tier model (Founding Tradie, Early Crew, Beta Mate), and recommend removing it entirely:
+
+**Suggested Actions:**
+
+* Remove all backend logic related to the three beta tiers
+* Remove any references in the UI (badges, messages, hidden logic)
+* Archive any internal documentation related to this structure
+
+🎯 This system has been replaced by the First 100 waitlist and demo tier, and is now obsolete.
+
+---
+
+### 🔵 2. **VIP Waitlist (First 100 Users) — Confirmed Live**
+
+* 30% off Blue Lite for 1 year
+* 1M tokens / 14-day full demo
+* Priority onboarding
+* Users **can apply their discount at any time**, even during demo period
+
+Please confirm that this logic is already functioning, and that:
+
+* The 30% discount can be applied concurrently with the demo
+* This tier is limited to the First 100
+* No discount stacking logic is in conflict here
+
+---
+
+### 🟢 3. **Demo Access (First 100 Only — Not General Public)**
+
+We are currently limiting the 14-day demo to the same First 100 users — not offering it to the general public.
+
+**Suggested Actions:**
+
+* Ensure that demo access is restricted to First 100 only
+* Allow for manual early access approval if a First 100 user requests it
+
+Please confirm if this access logic is correctly in place.
+
+---
+
+### 🟠 4. **Referral Reward Program — Proposed Structure**
+
+We’d like to introduce a sustainable, long-term referral program:
+
+**Suggested Structure:**
+
+* \$5 off next monthly bill for every successful referral (when their referral becomes a paying user)
+* No limit on number of referrals
+* Referral reward **can stack with any other discount**
+* Automatically applies to the next invoice after the referral converts
+
+**Implementation Needed:**
+
+* Referral tracking (link/code)
+* Hook for reward distribution
+* Dashboard display showing referral count and savings
+
+Please advise if this structure is feasible and fits with the current billing system. If so, we’d like to move forward with building it.
+
+---
+
+### ⚪ 5. **Case Study / Testimonial Offer — Manual Use Only**
+
+Currently in place for manual approval only. Confirm:
+
+* User submits 15–30 second testimonial video
+* Team manually applies **10% off Blue Core for 1 year**
+* Not shown publicly, used at discretion
+
+✅ Please keep as-is, no front-end changes needed.
+
+---
+
+### 🟡 6. **Founding Member Badge — Optional Status Only**
+
+This is purely symbolic for now.
+
+* Recognition badge shown in dashboard
+* Awarded after 3+ referrals, testimonial, or meaningful contribution
+* No connection to pricing or feature access
+
+✅ Keep this feature, but no need to surface unless explicitly triggered.
+
+---
+
+### ⚖️ Discount Stacking Rules (Clarified)
+
+Please confirm if these are currently enforced in the system:
+
+| Scenario                 | Benefit                      | Stackable? |
+| ------------------------ | ---------------------------- | ---------- |
+| First 100 (VIP Waitlist) | 30% off Blue Lite + demo     | ✅          |
+| Referral Program         | \$5 per successful referral  | ✅          |
+| Demo Access              | 14-day full token trial      | ✅          |
+| Testimonial Offer        | 10% off Blue Core for 1 year | ❌          |
+| Founding Badge           | Status only                  | ✅          |
+
+---
+
+### 🔧 Final Notes:
+
+* Please review and let us know if these changes make sense technically
+* Only implement updates if confirmed to be safe and congruent
+* Be cautious not to remove or modify any logic that is already functioning unless necessary
+* If possible, share your plan or approach before making any structural changes
+
+Thanks for helping us keep everything tight and aligned 🙏
+
+---
+
+Let me know if you’d like a short version of this prompt for a Slack message or inline comment inside the Replit workspace.

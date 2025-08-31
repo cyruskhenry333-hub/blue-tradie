@@ -1,0 +1,77 @@
+ROLE: You are a Senior Full-Stack Engineer + QA Lead. 
+GOAL: Give me an exact, code-verified picture of what Blue Tradie currently does, then make it match the REQUIRED EXPERIENCE below. No partial fixes. No regressions.
+
+OUTPUT FORMAT:
+1) “What Works Now” — feature-by-feature list, with file/func refs and screenshots/console logs.
+2) “What’s Broken or Missing” — list with root cause hypotheses and code pointers.
+3) “Fix Plan” — ordered PR checklist with acceptance criteria and E2E tests you will add.
+4) “Verification Report” — after fixes, show passing E2E runs and a screen-recorded user journey.
+
+— REQUIRED EXPERIENCE (this is the source of truth) —
+A) ENTRY + DEMO
+A1. User submits VIP form (name, country, email, trade) OR bypasses VIP: we are launching a demo directly.
+A2. System issues a DEMO CODE via email.
+A3. User clicks “Demo Login,” enters code, is authenticated, and lands in the app.
+
+B) ONBOARDING + PERSISTENCE
+B1. On first login only: 5-step onboarding wizard runs.
+B2. Regional logic must apply immediately based on chosen country (taxes, currency, date format).
+B3. After onboarding completes, set a durable flag (e.g., users.is_onboarded=true).
+B4. On subsequent logins, user bypasses wizard and lands on their dashboard with their data.
+B5. Session persistence must work across API calls; no 401s after successful login.
+
+C) FIRST-RUN UX
+C1. Show Welcome Card/Modal, then automatically launch the guided Tour (coachmarks) covering key areas.
+C2. Display a “Get Started Checklist” and a “Business Checklist.”
+C3. Provide “Goals / Vision” section and “Quick View / Business Snapshot” (balances, jobs due, invoices due).
+
+D) LIVE DATA REFRESH + BUTTON INTEGRITY
+D1. Creating a Job/Invoice/Expense updates the Quick View totals immediately (UI state + server data).
+D2. Every visible button and nav item must route to a working screen (no dead links/404s).
+D3. Logout → Login returns the user to their own data (no wizard repeat, no data loss).
+
+E) EMAILS + COPY
+E1. Replace “waiting for 100 signups” email with “Here’s your demo code → start now” (keep SendGrid).
+E2. Include a fallback demo link with code prefilled (if supported).
+
+— MANDATORY QA / E2E CHECKLIST (add Playwright tests) —
+1. VIP → email → demo code → demo login → onboarding → welcome modal → tour starts.
+2. Regionalization toggles (AU vs NZ) are reflected in tax/currency/date and persist across reload and re-login.
+3. Create Job, Invoice, Expense → Quick View KPIs update instantly and persist after reload and re-login.
+4. Logout/login flow lands on dashboard (wizard does NOT reappear). 
+5. Session persistence across API calls (no 401 after login). 
+6. All primary buttons/menus navigate; no dead routes.
+7. Email content: correct subject, body, demo code; link opens app successfully.
+
+— KNOWN ISSUES TO FIX FIRST (BLOCKERS) —
+X1. 401 Unauthorized after successful demo login (session not persisting). 
+   • Likely: cookie/session store misconfig, missing SameSite/Secure flags, or auth middleware not whitelisting demo session IDs.
+   • Deliver: middleware patch + server session store check + Playwright test.
+
+X2. Onboarding runs again on re-login.
+   • Add/confirm durable flag (users.is_onboarded) and short-circuit wizard if true.
+   • Migration: set flag for existing demo users.
+
+X3. Quick View not reflecting new Job/Invoice/Expense.
+   • Audit state management (query invalidation) and API responses; add server aggregation endpoint if needed.
+   • Add E2E that asserts KPI numbers increment.
+
+— TECH NOTES TO RETURN —
+• Current stack specifics (auth/session store package & config; DB tables/columns for onboarding flags; where regionalization is applied).
+• Exact files touched per fix.
+• Environment variables required, with sample .env keys (redact secrets).
+• Any architectural constraints that argue for migration off Replit.
+
+— MIGRATION READINESS (short section) —
+Provide a 10-step “migration plan” (Dockerfile, envs, Prisma/Drizzle migrations, seed/demo user script) for deploying to:
+• Vercel (Next.js or serverless Node) OR Render/Fly.io (Node/Express), and 
+• Neon/Supabase for Postgres.
+Do not migrate; just write the plan and validate the app is portable.
+
+GUARDRAILS:
+• No new features beyond what’s required to meet the above UX.
+• Every fix must ship with an E2E test and pass the regression suite.
+• Do not close this out until Verification Report includes green E2E runs and a screen recording of the full journey.
+
+SUCCESS CRITERIA:
+A stable demo anyone can run end-to-end without you, with onboarding skipped on return, real-time KPIs updating, and all primary buttons working — proven by automated tests and a recorded walkthrough.

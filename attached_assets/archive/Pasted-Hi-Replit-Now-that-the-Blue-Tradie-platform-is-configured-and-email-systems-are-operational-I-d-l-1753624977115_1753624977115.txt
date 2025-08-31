@@ -1,0 +1,96 @@
+Hi Replit,
+
+Now that the Blue Tradie platform is configured and email systems are operational, I’d like to ensure that the entire user journey is fully functional before launching the beta publicly.
+
+Please run a complete end-to-end simulation of all core user-facing routes, actions, and flows using the breakdown you previously shared. Specifically:
+✅ Simulate the Following Test Cases:
+
+🧪 Beta Signup Flow
+
+    Attempt signup via /beta with valid invite code BETA123
+
+    Expect: redirect to /onboarding → completion of onboarding → welcome email triggered
+
+🧪 Onboarding & Goals
+
+    Fill out all onboarding fields: business name, trade, location, GST, etc.
+
+    Proceed to /goals and simulate goal setting
+
+    Expect: goals saved to DB, AI-generated vision board shown
+
+🧪 Dashboard Navigation
+
+    Visit / dashboard after onboarding
+
+    Confirm all widgets and metrics render correctly
+
+    Interact with: create job, invoice, expense, chat AI buttons
+
+🧪 Job Management
+
+    Simulate creating a job in /jobs
+
+    Edit job → change status → create invoice from job
+
+    Expect: job data saved, linked invoice generated
+
+🧪 Invoicing
+
+    Simulate creating invoice manually
+
+    Use AI auto-fill for line items
+
+    Expect: proper GST applied, PDF option visible
+
+🧪 Expenses
+
+    Add an expense in /expenses with category and GST selected
+
+    Link to a job (if possible)
+
+    Expect: expense saved, displayed in expense list
+
+🧪 AI Chat Agents
+
+    Simulate chatting with all 4 agents in /chat/:agentType
+
+    Test: Accountant, Legal, Marketing, Business Coach
+
+    Expect: unique responses, persistent message history
+
+🧪 Profile & Settings
+
+    Update business name and logo in /profile
+
+    Change tone settings and GST config in /settings
+
+    Expect: changes saved, settings persist after refresh
+
+🧪 Welcome Modal + Tour
+
+    Trigger country-specific welcome modal
+
+    Run through guided 14-step tour
+
+    Expect: all steps work without breaking navigation
+
+🧪 Email Automation
+
+    Ensure welcome emails were triggered properly per tier
+
+    Simulate 7-day testimonial email trigger (if possible)
+
+Please:
+
+    Verify all buttons, links, and forms function without 404 or frontend errors
+
+    Confirm all data saves to the database
+
+    Report any missing UI elements or broken flows
+
+    Flag any features that appear incomplete or improperly connected
+
+Once this test run is complete, I’ll do a live dummy test myself to validate from the frontend. Let me know your findings and any areas needing attention before we onboard real users.
+
+Thanks!

@@ -1,0 +1,72 @@
+Thanks for the updates so far — the scroll and highlight effects work great.
+
+However, the tooltips are still fixed in the center of the screen, not anchored to the highlighted section like we want. This is breaking the visual flow and doesn’t feel like a real tour. Here's what needs to be changed:
+🎯 Problem:
+
+    ✅ Tour scrolls and highlights the correct section
+
+    ❌ But the tooltip floats in the center of the screen, unrelated to the section
+
+    ❌ It doesn’t feel like the tooltip is introducing the actual UI element being discussed
+
+    ❌ On smaller screens or variable card heights, this looks especially disconnected and confusing
+
+✅ Desired Outcome:
+
+Each step of the tour should:
+
+    Scroll to the element (already working ✅)
+
+    Highlight the element (already working ✅)
+
+    Attach the tooltip directly to the highlighted element, not the center of the screen ❌
+
+    Tooltip should include a directional arrow pointing to the target section (e.g., below/above/right/left of element)
+
+    Tooltip should reposition automatically on screen resize and remain attached
+
+💡 Suggested Implementation:
+
+If we’re using React Joyride, use:
+
+{
+  target: '.ai-business-team',
+  content: 'Meet your personal AI team — real assistants that help you with money, marketing, legal, and goals.',
+  placement: 'bottom',
+  disableScrolling: false,
+  spotlightPadding: 12,
+  scrollOffset: 72, // for sticky header
+  styles: {
+    options: {
+      arrowColor: '#fff',
+    }
+  }
+}
+
+If this is custom tour code, update your tooltip logic like this:
+
+// Get element position
+const rect = target.getBoundingClientRect();
+tooltip.style.position = 'absolute';
+tooltip.style.top = `${rect.bottom + window.scrollY + 12}px`; // bottom of element
+tooltip.style.left = `${rect.left + window.scrollX}px`; // left aligned
+
+Also:
+
+    Use scrollIntoView({ behavior: 'smooth', block: 'center' }) before positioning
+
+    Recalculate position on window resize and when the step changes
+
+    Add .tooltip-arrow class to show a directional arrow
+
+✅ Acceptance Criteria:
+
+    Tooltip is visibly attached to each highlighted element
+
+    It appears below or beside the section depending on screen space
+
+    The arrow points directly to the element
+
+    The tooltip no longer floats disconnected from the UI
+
+Can you please apply this and confirm whether we’re using a library (like Joyride or Shepherd), or if we’re working with a custom system? That’ll help make this final adjustment clean and precise. Thank you!

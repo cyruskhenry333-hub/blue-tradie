@@ -1,0 +1,96 @@
+Hi team — I noticed a few issues still present across the Token Usage & Education Modal and the Guided Tour step (5 of 15). Here's a detailed breakdown of the problems and what needs fixing:
+🔧 1. Incorrect Token Pricing – Token Usage Modal (Main Dashboard)
+
+Location:
+➡️ Dashboard → Click on “Tokens” (top right) → Token Modal
+
+Problem:
+The modal currently shows:
+
+Quick question (5 tokens)        $0.200000 NZD  
+Invoice advice (12 tokens)       $0.480000 NZD  
+Business planning (30 tokens)    $1.200000 NZD  
+
+This is wildly inaccurate.
+
+Fix:
+Use actual GPT-4o-mini pricing + 20% markup (rounded for clarity):
+
+    1 token ≈ $0.00000182 AUD → 30 tokens ≈ $0.00005 AUD
+
+Suggested display options:
+
+    Either show accurate costs with simplified decimals:
+
+        Business planning (30 tokens): ~$0.00005 AUD
+
+    Or just replace with simple language:
+
+        "Most tasks cost less than 1 cent."
+
+🧠 2. Overwhelming Cost Detail – Too Many Decimals
+
+Location:
+➡️ Same Token Modal (bottom of pricing section)
+
+Problem:
+Displaying numbers like $0.00000182 can feel confusing and technical for tradie users.
+
+Fix:
+
+    Add a toggle:
+
+        [🧠 Show advanced pricing details]
+        Hide these numbers by default.
+
+    OR: Just state:
+
+        “Your 1M free tokens go a long way — most tasks cost only a few tokens (a fraction of a cent).”
+
+📉 3. Misleading Valuation of 1M Tokens
+
+Location:
+➡️ Same Token Modal → “1M tokens (full allocation)” shows: $40,000.00 NZD
+
+Problem:
+That figure is not just incorrect — it’s damaging. It creates confusion around value and pricing.
+
+Fix:
+
+    Remove that price entirely.
+
+    Replace with a clear label like:
+
+        ✅ Includes 1M tokens free with your demo.
+
+📜 4. Guided Tour Still Uses Inaccurate Tone
+
+Location:
+➡️ Guided Tour → Step 5 of 15 (“Your Tokens = Your AI Power”)
+
+Problem:
+
+    While the tone is generally okay, there’s no mention of actual token cost or clarity that 1M tokens = practically unlimited use during demo.
+
+Fix:
+
+    Add reassurance here:
+
+        “You’ve got 1 million free tokens to try everything. Most tasks only cost a few tokens — so you won’t run out.”
+
+🔄 5. Missing Scroll or Collapse on Modal
+
+Location:
+➡️ Token Modal (main dashboard)
+
+Problem:
+
+    On smaller screens, there’s no scrolling or collapse, so content can get cut off.
+
+Fix:
+
+    Enable vertical scrolling in modal.
+
+    Collapse long pricing info or add “Show More” toggle if necessary.
+
+Let me know if you'd like me to test anything post-update. Thanks — these fixes will go a long way in improving user trust and clarity.

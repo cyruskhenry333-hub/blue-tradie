@@ -1,0 +1,54 @@
+Here’s a firm, clear, and actionable prompt you can send to Replit that:
+
+* Flags that the system is not using the correct templates
+* Requests confirmation of **what templates are actually being used**
+* Asks where the templates are managed so you can inspect or manage them directly
+* Expresses your frustration professionally while keeping the door open for resolution
+
+---
+
+**Prompt for Replit:**
+
+Hey team — I need to pause here and get some clarity, because it feels like we’re going in circles and wasting time and money.
+
+---
+
+### ❌ Issues:
+
+1. I **still have not received the Welcome email**, despite the system marking it as sent.
+2. The **Day 7 and Day 14 emails are using the wrong templates** — they don’t match the ones we previously created and approved.
+3. It looks like these follow-up emails were either created from scratch or pulled from a default/fallback instead of the correct HTML templates.
+
+---
+
+### 🔍 What I need to know:
+
+1. **What exact SendGrid templates are being used right now** for:
+
+   * Welcome email
+   * Day 7 Follow-up
+   * Day 14 Video Request
+
+   Please provide:
+
+   * The **template names**
+   * The **SendGrid template IDs**
+   * The **file or variable location** in the Replit environment where these are being referenced
+
+2. **Where can I find and edit these templates manually** in the Replit project?
+
+   * I want full visibility over how this is set up
+   * I need to know if this is being handled via environment variables, inline HTML, or external API calls to SendGrid
+
+3. **Can I manually trigger and test these emails myself** from the Replit environment?
+   If so, please give me the steps or commands to do so.
+
+---
+
+### ⚠️ Final Note:
+
+This has taken far too long and I’ve spent way too much time and money trying to get a simple automation flow to work the way we originally planned. I’m not looking for more patches or rewrites — I want the system to follow the **exact templates and logic we agreed on**, without deviations.
+
+Please respond with the full technical setup so I can review and make changes directly if needed.
+
+Thanks.

@@ -1,0 +1,93 @@
+Hey team — great progress on the last fixes, but after full re-testing I’ve identified additional issues that still need to be addressed.
+
+Please read carefully and do not introduce new flows or workarounds unless confirmed with me first.
+🚨 1. RE-LOGIN STILL BROKEN
+
+Issue: After logging out and back in, I’m still being taken through the onboarding wizard, despite isOnboarded: true already set.
+
+    ✅ Dashboard shows fully completed data
+
+    ❌ Onboarding wizard reappears on login — this should be bypassed
+
+    🔁 This issue still isn’t resolved — please retest with a real demo login and confirm auth state is respected
+
+✏️ 2. EDIT FUNCTION MISSING (Jobs, Expenses, Invoices)
+
+Expected: Any item created (job, invoice, or expense) should be editable via an “Edit” button.
+
+Current: No edit capability exists — user must delete and recreate records.
+
+✅ Please add “Edit” functionality for each record, or confirm if this was excluded intentionally.
+If excluded, explain why — and do not implement a new solution without discussion.
+✉️ 3. Invoices Can’t Be Sent
+
+Expected: On the invoice view, there should be a button to send/share the invoice (email or downloadable link).
+
+Current: No send function available.
+
+❓Is this restricted because of demo login, or is the backend API not implemented?
+
+→ Please confirm:
+
+    Is there a /send-invoice endpoint?
+
+    Are real users (non-demo) able to send invoices?
+
+    If this is a placeholder, flag it clearly in the UI to avoid confusion.
+
+🧩 4. Dashboard Quick Glance Logic Broken
+
+    The “This Month” jobs card shows 0, even though 2 jobs are scheduled today.
+
+    “Today’s Jobs” and “This Week’s Expenses” sections show incomplete or outdated data.
+
+    The “View All” button in the Today’s Jobs section doesn’t work (no routing/action).
+
+✅ Please:
+
+    Fix the logic to ensure “This Month” includes all current jobs (including today)
+
+    Ensure all dashboard cards are synced with real-time data
+
+    Confirm routing/actions for all “View All” buttons — simulate actual button clicks
+
+⚠️ Final Note (Again):
+
+Please DO NOT:
+
+    Add new flows
+
+    Rewrite business logic
+
+    Add new placeholder data
+
+    Patch silently
+
+Unless you:
+
+    Simulate the actual user journey
+
+    Confirm the issue explicitly
+
+    Check with me before applying anything not requested
+
+Replit must simulate every single button, view, and action as a real user would — test buttons, routes, edits, deletes, state sync, and redirects.
+✅ Please confirm once the following are fixed:
+
+Re-login skips onboarding correctly
+
+Edit function added to jobs, invoices, and expenses
+
+Invoice send capability (or confirm why it’s disabled)
+
+“This Month” jobs stat includes all jobs
+
+“View All” button works in Today’s Jobs card
+
+“This Week’s Expenses” displays real-time data
+
+    All dashboard cards reflect current state correctly
+
+Let me know once the fixes are deployed and tested end-to-end.
+
+Thanks.

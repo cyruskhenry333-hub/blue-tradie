@@ -1,0 +1,91 @@
+During testing I clicked a demo login link (from an older live email) and saw the following issues:
+
+Loading spinner (3–5s), then redirected to the demo dashboard.
+
+Clicking Home switched me to the main user dashboard without onboarding.
+
+The tour started even though onboarding was never completed.
+
+This confirms the demo login, org resolution, and onboarding gate are still inconsistent.
+
+Required Fixes
+
+Rotate & Invalidate Old Tokens
+
+Rotate the signing key so any older magic-link emails are invalid.
+
+Ensure new links are only valid in the current environment.
+
+Correct Base URL per Environment
+
+Preview emails must use the exact preview host (e.g. https://<repl-id>.<user>.repl.co or *.replit.app).
+
+Production emails must use the canonical host (https://bluetradie.com or https://www.bluetradie.com).
+
+Reply with the exact preview URL (with token redacted) that I can paste into an incognito window to test.
+
+Cookie & Redirect Consistency
+
+In preview: set a host-only cookie (omit Domain).
+
+In prod: set Domain .bluetradie.com.
+
+After verify, redirect to the same host that set the cookie.
+
+Provide the Set-Cookie and Location headers from the verify response.
+
+Per-Org Onboarding Enforcement
+
+Onboarding completion must be stored per org (org_user.onboarded or similar), not just on the user.
+
+Middleware should enforce onboarding on every app route (except /onboarding, /auth/*, /demo/*) for the current org.
+
+Provide the middleware snippet that enforces this.
+
+Org Resolution After Demo Login
+
+Demo login should pin the session to the demo org until onboarding is complete.
+
+Do not silently switch orgs when clicking Home.
+
+If a switch occurs, the onboarding gate must run again.
+
+Tour Trigger Discipline
+
+Tour only launches once the current org’s onboarding is complete.
+
+Provide the condition currently used to start the tour.
+
+Fallback UX
+
+Add a temporary “Paste demo code” field on the login page so I can verify tokens directly in preview.
+
+Deliverables to Provide Back
+
+The preview URL I can paste into an incognito window to test the full flow (with token redacted).
+
+The Set-Cookie + Location headers from the verify response.
+
+Middleware snippet enforcing the onboarding gate.
+
+Schema/field used for onboarding completion.
+
+Tour trigger condition.
+
+Short screen recording showing:
+
+Fresh demo email link → verify → /onboarding
+
+Clicking Home still enforces onboarding
+
+Completing onboarding → dashboard → tour starts
+
+Acceptance Criteria
+
+Fresh demo email link in incognito → must land on /onboarding.
+
+Clicking Home/org switch cannot bypass onboarding.
+
+Tour only starts after onboarding is complete.
+
+No redirect loops; console/network clean.

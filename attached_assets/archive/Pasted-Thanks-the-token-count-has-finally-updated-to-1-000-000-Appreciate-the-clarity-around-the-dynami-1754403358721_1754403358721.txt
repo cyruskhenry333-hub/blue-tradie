@@ -1,0 +1,50 @@
+Thanks — the token count has finally updated to 1,000,000 ✅
+Appreciate the clarity around the dynamic user ID issue and the API call interval.
+
+That said, some new and recurring problems have now appeared after your update:
+🔧 1. Goals Marked Complete… Without Me Doing It
+
+It looks like the platform auto-marked my goals as completed — I didn’t even fill anything in. Likely triggered after the database fix.
+
+    This is confusing and defeats the purpose of the checklist milestone.
+
+    There should be an option to edit goals at any time — users should never feel locked out or stuck with old info.
+
+Please make sure goals are only marked complete after actual user input — and allow users to revise them later.
+🖼️ 2. Logo Upload Still Not Working
+
+    Uploading my logo did nothing — no visual confirmation, and the checklist did not update.
+
+    Please test and confirm that both frontend and backend logic is registering logo uploads properly.
+
+This is now the third time this feature has been marked fixed without actually working.
+🧠 3. Remove “Generate With AI” from Logo Upload Card
+
+This option shouldn’t appear here — that’s meant to be part of the AI Branding Wizard, not the logo upload card.
+Please remove this to avoid confusion and feature overlap.
+🤖 4. AI Chatbot Text Still Boring and Robotic
+
+We had already fixed this once — but the current message looks like the old generic fallback. This is what I’m getting:
+
+    To better assist you, I need a bit more context about your current situation. Are you looking to set goals for your trade business…
+
+It continues in a long paragraph with zero formatting, way too formal and dry.
+
+Please update this with:
+
+    Friendly, engaging tone
+
+    Emojis instead of asterisks
+
+    Shorter, readable chunks
+
+    Clear prompts or actions the user can take next
+
+Let me know if you want me to rewrite that section — happy to provide a refreshed version.
+🚨 Final Note:
+
+Please test the frontend behavior yourself before marking these as resolved. Each time I double-check, I find that the “fix” didn’t actually work. That’s now adding to frustration and delays.
+
+Looking forward to the next update. Let me know when everything above is live and tested.
+
+Let me know if you want me to rewrite the AI chatbot response text to send them directly.

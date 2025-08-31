@@ -1,0 +1,77 @@
+Absolutely — here’s a **rewritten version of the escalation prompt**, now including the new issue with the **welcome email text being hidden** again. This version is firm, clear, and structured to **stop over-engineering** and refocus the team on doing **exactly what’s needed** — and nothing more.
+
+---
+
+### 🚨 TO: REPLIT — STOP. Fix These 3 Issues. No New Changes Until Resolved.
+
+Hey team — we’re now going in circles. You’ve introduced new problems while trying to fix others. It’s time to pause, clean this up, and stop guessing.
+
+---
+
+## 🔴 CRITICAL ISSUES (TO FIX ONLY)
+
+---
+
+### 1. ❌ Still Receiving **Both Emails at Once**
+
+This is the core problem I’ve flagged multiple times. The system is **still sending both the welcome email and the demo access email at the same time**.
+
+**Fix:**
+
+* Only send the **welcome email** when a user signs up.
+* Only send the **demo access email** *after* the user clicks the button.
+* Simulate this with a real inbox (e.g. Kane) and confirm the flow step by step.
+
+---
+
+### 2. ❌ Welcome Email Text is **Hiding or Clipping Again**
+
+This is a **regression** — the welcome email body is now getting **collapsed/hidden** in Gmail again (I’ve already seen this happen previously).
+
+**Fix:**
+
+* Restore a layout where **all text and the button are fully visible by default** in Gmail and other common inboxes.
+* Avoid deep nesting, excessive inline styles, or large block elements.
+* Test in **real Gmail**, not just preview environments.
+
+---
+
+### 3. ❌ Button Still Doesn’t Visibly Confirm
+
+Even if the email sends after clicking, the **button isn’t changing visually** — so users think nothing happened.
+
+**Fix:**
+
+* The button must:
+
+  * Update text to: **✅ Demo Access Sent!**
+  * Turn green: `#10b981`
+  * Become disabled
+  * Change cursor to `not-allowed`
+
+If Gmail blocks this, use a static message that appears **underneath the button** after it's clicked. Do **not** redirect or open a new page.
+
+---
+
+## ✅ DO THIS:
+
+* [ ] Roll back to the last clean, working version
+* [ ] Implement ONLY these three fixes — nothing else
+* [ ] Simulate the flow yourself (waitlist signup → inbox → click → demo email)
+* [ ] Confirm it works **in Gmail**
+* [ ] Send screenshots or a test confirmation
+
+---
+
+## 🚫 DO NOT:
+
+* Add fallback states or multiple visual versions
+* Create success pages
+* Trigger both emails at once
+* Assume it’s working without real-world testing
+
+---
+
+Once this is clean and confirmed working, we can move forward.
+
+Thanks.

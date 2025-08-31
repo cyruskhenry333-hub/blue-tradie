@@ -1,0 +1,39 @@
+Hey team — I just ran through the platform again and unfortunately none of the fixes you listed are working on the actual demo account.
+
+Here are the confirmed persistent issues (with screenshots attached):
+
+1. Token Counter Still Incorrect
+• The UI still shows 2,000 tokens, not the 1,000,000 as promised for demo users.
+• Despite backend claims, frontend is not reflecting the correct balance.
+
+2. Goals & Vision Checklist Not Working
+• After completing the goals setup, the checklist does NOT mark it as complete.
+• Also, the “Quick Glance” section does not reflect any update.
+• Please clarify: Is “Set Your Goals and Vision” the same as “Set Your Business Goals”? If they are different, this is confusing and should be renamed.
+
+3. Profile Completion Still Broken
+• I uploaded a business logo — it did not update visually, and the checklist did not register it as complete.
+• If both logo and profile info are required, this should be clearly communicated in the UI and confirmed with visual feedback when completed.
+
+4. Invoice Creation Still Fails
+• Attempting to generate an invoice results in a 500 error: “Failed to create invoice.”
+• Despite your note that this now works, it clearly does not work live.
+
+5. AI Chat Still Broken
+• I tried using the Business Coach AI — it shows a chat error and doesn't register any completion.
+• This was meant to trigger a milestone, but fails at both backend and frontend levels.
+✳️ Please Do the Following:
+
+    Fully simulate and test all demo user tasks on your side before confirming they're fixed.
+
+    Confirm that you are checking both backend AND frontend behavior (not just logs).
+
+    Include a visual/video walkthrough or screenshots proving that these now function properly for a fresh demo user.
+
+    Clearly identify if any cached states or missing refresh actions might be affecting user experience — but please resolve at root, not patch.
+
+At this point, I’ve tested all of these personally multiple times, and the issues persist. I really need your team to go deeper and fully validate with a proper simulated test account before confirming fixes.
+
+Let me know when it’s fully functioning — thank you.
+
+Let me know if you want this copy shortened or if you'd like to include a comment about your time and energy being wasted having to double-check everything.

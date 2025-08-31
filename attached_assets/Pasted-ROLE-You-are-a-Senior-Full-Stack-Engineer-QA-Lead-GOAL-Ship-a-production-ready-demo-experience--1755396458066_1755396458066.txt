@@ -1,0 +1,114 @@
+ROLE: You are a Senior Full-Stack Engineer + QA Lead.
+GOAL: Ship a production-ready demo experience by delivering TWO milestones ONLY (no extras):
+  1. Replace VIP waitlist with direct “Get Demo Code → Demo Login” flow.
+  2. Implement invoice emailing (SendGrid) + Stripe payments.
+
+Everything must be fully regression-tested with E2E Playwright tests. Do not add any unrelated features (no tours, AR, payroll, etc.).
+
+================================================================================
+MILESTONE 1: REMOVE VIP, LAUNCH DEMO CTA SITE-WIDE
+================================================================================
+A) ROUTES & REDIRECTS
+- Homepage (/) → “Get Demo Code” CTA replaces VIP copy.
+- New /demo page: “Enter your demo code” (prefilled if ?code=XYZ).
+- Redirects: /vip, /waitlist, /early-access → /demo (301).
+
+B) FORM + EMAIL FLOW
+- Form: name, email, country, trade → POST /api/demo/request
+- Behavior:
+   - Create/reuse demo user/code.
+   - Send email via SendGrid:
+     Subject: “Your Blue Tradie demo code”
+     Body: demo code + button link ${APP_BASE_URL}/demo?code={{CODE}}
+   - Save email_to + sent_at in DB.
+   - Add /api/demo/resend endpoint.
+
+C) DEMO PAGE (/demo)
+- Input for demo code (prefilled if ?code=XYZ).
+- On submit → demo login endpoint → onboarding (first login) OR dashboard (if isOnboarded true).
+- “Didn’t get the email?” → /api/demo/resend.
+
+D) CLEANUP
+- Remove all VIP language/components.
+- Update sitemap/SEO (no VIP).
+- Search repo for “VIP”, “waitlist”, “early access” → replace with “demo”.
+
+E) QA / E2E
+1. Home → Get Demo Code → email logged to outbox → login → onboarding → dashboard.
+2. Logout → login again → dashboard (no wizard).
+3. /vip & /waitlist → redirect to /demo.
+4. Resend flow → new email logged.
+5. Copy review: no VIP mentions remain.
+
+================================================================================
+MILESTONE 2: INVOICE EMAILS + STRIPE PAYMENTS
+================================================================================
+A) INVOICE EMAIL SENDING
+- Endpoint: POST /api/invoices/:id/email
+- Auth: owner/admin only.
+- Behavior:
+   - Generate/reuse invoice PDF.
+   - Create/reuse Stripe pay link.
+   - Send via SendGrid (env vars: SENDGRID_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME).
+   - Save invoices.email_to, invoices.email_sent_at, invoices.payment_status='sent'.
+- Email template:
+   Subject: “Invoice {{invoice_number}} from {{business_name}}”
+   Body:
+     - Line items summary, total, due date
+     - “View & Pay Invoice” button → pay URL
+     - Plain-text fallback with link
+   - Attach PDF if <10MB, else link.
+- DB changes (Drizzle):
+   invoices:
+     email_to, email_sent_at, payment_status (enum draft|sent|paid|failed|refunded),
+     stripe_session_id, stripe_payment_intent_id, paid_at
+   business_profile:
+     from_email, from_name, currency_code (AUD/NZD)
+
+B) STRIPE PAYMENTS
+- Endpoint: POST /api/invoices/:id/paylink
+   - Creates Stripe Checkout Session with invoice total + currency.
+   - Success URL: ${APP_BASE_URL}/invoice/success?inv={{id}}
+   - Cancel URL:  ${APP_BASE_URL}/invoice/cancel?inv={{id}}
+   - Save stripe_session_id, return { url }.
+- Webhook: POST /api/stripe/webhook
+   - Verify signature (STRIPE_WEBHOOK_SECRET).
+   - checkout.session.completed → set status=paid, paid_at=now.
+   - payment_intent.payment_failed → status=failed.
+   - charge.refunded → status=refunded.
+- GET /api/invoices/:id → include new fields.
+
+C) ENV VARS
+- STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+- SENDGRID_API_KEY
+- EMAIL_FROM, EMAIL_FROM_NAME
+- APP_BASE_URL
+
+D) QA / E2E
+1. Create invoice → generate pay link → verify stripe_session_id saved.
+2. Simulate webhook → status=paid, paid_at set.
+3. Send email → outbox shows to/subject/body with pay URL → invoice updated.
+4. Logout/login → invoice state persists; dashboard KPIs update.
+5. AU vs NZ user → correct currency symbol in pay link + email.
+
+================================================================================
+ACCEPTANCE CRITERIA (for both milestones)
+================================================================================
+- Homepage: “Get Demo Code” replaces VIP, works end-to-end.
+- Emails: demo code + pay links delivered via SendGrid (outbox in test).
+- Invoices: can be emailed + paid via Stripe (test mode).
+- Dashboard KPIs reflect sent/paid totals live and after re-login.
+- All Playwright tests for above scenarios pass.
+- README updated with:
+   - env vars
+   - how to run tests
+   - how to switch Stripe to live mode
+   - how to view test outbox for emails
+- Short screen recording: demo signup → login → create invoice → generate pay link → simulate webhook → invoice marked paid → send invoice email with pay link → re-login → dashboard reflects paid status.
+
+================================================================================
+GUARDRAILS
+================================================================================
+- Do NOT add new features beyond these 2 milestones.
+- Do NOT change auth flow except to secure new endpoints.
+- No regressions: onboarding loop, session persistence, or dashboard stats.

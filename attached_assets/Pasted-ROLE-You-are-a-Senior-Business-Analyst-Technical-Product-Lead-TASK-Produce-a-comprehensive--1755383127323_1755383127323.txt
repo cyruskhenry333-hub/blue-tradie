@@ -1,0 +1,60 @@
+ROLE: You are a Senior Business Analyst + Technical Product Lead.  
+TASK: Produce a **comprehensive status report** on the Blue Tradie platform, so we can prepare a global acquisition pitch.  
+Do not skip sections. If data is not available, mark as [UNKNOWN] rather than assuming.
+
+OUTPUT FORMAT:  
+Return a clearly structured report with sections 1–6 below, using tables where appropriate.
+
+---
+
+1. PRODUCT & ROADMAP
+- List all current features live today (e.g., invoicing, expenses, AI advisors, automation, onboarding, directory, etc.).  
+- List all features partially built or incomplete (e.g., PDF gen, team management, voice input).  
+- List all features confirmed on the roadmap (next 6–12 months).  
+- Include tech stack summary (frontend, backend, AI/ML services, DB, hosting).  
+- Include known scalability and security posture notes.
+
+2. COMPETITOR & MARKET DATA
+- Identify direct competitors in AU/NZ trades SaaS (ServiceM8, Tradify, Fergus, simPRO, NextMinute, AroFlo, etc.).  
+- For each competitor: pricing model, estimated user base (if available), ARPU benchmarks, geographic reach.  
+- Provide AU/NZ tradie market size (TAM, SAM, SOM if possible).  
+- Provide global market context (US, UK, EU, Asia).  
+- Include any public valuation, funding, or acquisition data for competitors.
+
+3. FINANCIAL & VALUATION INPUTS
+- Provide replacement-cost model (estimated engineer/design/QA hours × AU dev rates).  
+- Provide user growth scenarios already modeled (5k, 20k, 100k+ seats).  
+- Provide revenue model breakdown (subscription tiers, token/AI usage system).  
+- Provide LTV and CAC assumptions if modeled.  
+- Provide any existing valuation estimates or frameworks you have run.
+
+4. BUSINESS SYNERGY POINTS
+- Detail how Blue Tradie could integrate with major hardware/retailers (Bunnings, Sydney Tools, Mitre 10, Reece, Home Depot, Lowe’s, etc.).  
+- Include synergy opportunities: loyalty programs, SKU tie-ins, financing, insurance, training, community growth.  
+- Include partner ecosystem possibilities (banks, insurers, materials suppliers).
+
+5. RISK REGISTER
+- List known technical gaps or weaknesses (e.g., incomplete features, missing QA, UX issues).  
+- List any security/compliance risks.  
+- List user journey gaps (e.g., onboarding, billing, token purchase flow).  
+- Categorize risks as HIGH/MEDIUM/LOW with notes.
+
+6. RAW DATA OUTPUT
+- Provide all tables, comps, projections, and financial breakdowns you’ve generated for Blue Tradie to date.  
+- Include AU/NZ tradie counts, market penetration rates, and any global scaling estimates.  
+- Provide your most comprehensive dataset so nothing is missed.
+
+---
+
+GUARDRAILS:  
+- Do not speculate if data is unavailable. Mark [UNKNOWN].  
+- Be explicit about your sources if derived from competitor docs, public filings, or prior outputs.  
+- Keep answers concise but complete — assume this report will be handed directly to corp dev teams.
+
+SUCCESS CRITERIA:  
+I should be able to read this report and immediately understand:  
+- What Blue Tradie is today  
+- Where it’s going in the next 12 months  
+- How it compares to competitors  
+- What the financial upside is  
+- What risks a buyer needs to consider

@@ -1,0 +1,36 @@
+Hey Replit team 👋
+
+While you’re working on the tiered onboarding system for our first 100 Blue Tradie users, I wanted to make sure we’re setting ourselves up for the best possible beta launch.
+
+Here are a few things I’ve been thinking about — could you let me know which of these we already have implemented, what you recommend, and if there’s anything else you think we should consider?
+
+    Tier-Based Email Sequences
+    Do we have tier-specific onboarding emails for Tier 1, Tier 2, and Tier 3 users? (e.g., different welcome messaging or setup guidance based on the offer they received?)
+
+    In-App Feedback Loop
+    Is there a plan for lightweight user feedback inside the app — maybe a “Got feedback?” button or periodic micro-surveys?
+
+    Onboarding Checklist UI
+    Do we have a persistent setup checklist or progress bar inside the dashboard to guide new users through essential first steps?
+
+    Testimonial Flow
+    Are we collecting testimonials from our early users — either automatically (via email after X days) or through a visible CTA in the UI?
+
+    Mobile Optimization
+    Is the full user flow optimized for mobile (especially onboarding, invoices, and interacting with AI agents)?
+
+    Waitlist System Prep
+    Once the 100 spots are filled, do we have a waitlist sign-up page with optional engagement touchpoints (like sneak peeks or feature voting)?
+
+    Public Roadmap or Feature Voting
+    Would it make sense to add a public Notion-style roadmap or simple upvoting system to let users know what’s coming and give feedback?
+
+    Welcome from Founder Video
+    Could we embed a 60-second selfie-style welcome video from me in the onboarding experience or emails to build more trust?
+
+    Pricing & Feature Anchoring
+    Do we have early messaging in place that helps users understand the value of Blue Tradie compared to what else is out there?
+
+I want this to be a tight, smooth beta that makes our users feel like they’re part of building something special. What are your thoughts? Is there anything else you think we can do to make this rollout a success?
+
+Appreciate all your input 

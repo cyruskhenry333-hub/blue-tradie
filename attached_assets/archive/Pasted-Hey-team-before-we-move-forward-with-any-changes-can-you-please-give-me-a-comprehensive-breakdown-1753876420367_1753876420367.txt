@@ -1,0 +1,64 @@
+Hey team — before we move forward with any changes, can you please give me a comprehensive breakdown of everything related to the beta testing system?
+
+Please don’t leave anything out. I want a full overview of:
+1. Beta Tier Structure
+
+    What tiers currently exist (names, internal references)?
+
+    What is the intended purpose or feature scope of each tier?
+
+    Is this tied to any pricing logic or token system?
+
+2. Signup & Assignment Flow
+
+    How does a user enter the beta testing system?
+
+    How is their tier determined (manually assigned, user-selected, auto-detected)?
+
+    What routes, components, and database logic are involved in the signup process?
+
+    What happens after a user signs up? (e.g. redirects, flags, stored metadata)
+
+3. Access Control & Permissions
+
+    What features or sections are currently gated by tier?
+
+    What does Tier 1 have access to vs Tier 2 and Tier 3?
+
+    Are there any backend checks or frontend conditionals tied to beta status?
+
+    Are discounts or special offers applied based on tier?
+
+4. UI/UX Display Logic
+
+    Are there any visible indicators that reflect a user’s tier?
+
+    Is there any tier-specific messaging, banners, or instructions?
+
+    Do users experience different UI components based on tier?
+
+5. Database & Backend
+
+    What fields or flags are stored in the database to represent beta tier?
+
+    Are these values reliably used throughout the platform?
+
+    Are there any related triggers, webhooks, or automation tied to tier assignment?
+
+6. Testing Status & Known Issues
+
+    Which parts of the beta system are confirmed working right now?
+
+    Are there any known bugs, inconsistencies, or gaps in logic?
+
+    Are there any leftover components or deprecated code from previous beta iterations?
+
+7. Dependencies or External Systems
+
+    Is the beta system linked to any third-party services, payment systems, or AI agents?
+
+    Do any other systems rely on tier data?
+
+We’ll be restructuring or potentially removing parts of this system, so it’s important we have a full picture of the current state. Please confirm everything that’s live, functional, and connected — and anything that still needs testing or cleanup.
+
+Thanks!

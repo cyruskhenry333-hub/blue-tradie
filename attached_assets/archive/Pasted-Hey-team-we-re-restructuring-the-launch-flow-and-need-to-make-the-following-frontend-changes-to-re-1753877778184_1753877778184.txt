@@ -1,0 +1,53 @@
+Hey team — we’re restructuring the launch flow and need to make the following frontend changes to remove the visible beta system and direct users into a simple waitlist-first approach.
+🔧 TASKS:
+1. 🚫 Remove or hide all beta-related UI elements and routes
+
+Please disable or comment out the following from both the homepage and navigation:
+
+    🔵 The "🎉 Beta is now live!" banner at the top (see Screenshot 1)
+
+    🟢 The Beta signup block under the hero section (showing spot count and tier info)
+
+    🔴 The entire "100 Beta Spots. 3 Tiers..." pricing grid (Screenshot 2)
+
+    🔵 The "Claim Your Spot Now" CTA block (Screenshot 3)
+
+    🔴 The "Early Access Special" section at the very bottom (Screenshot 7)
+
+    NOTE: All these components are part of the beta testing flow and need to be completely removed from both desktop and mobile versions.
+
+2. ➕ Add a "Join the Waitlist" button in the Hero Section
+
+Please add a new button directly beside (or just under) the current “Get Started” and “See Features” buttons in the Hero block. (See Screenshot 1)
+
+    🟡 Label: Join the Waitlist
+
+    🔗 Destination: /waitlist (or whatever the waitlist route is)
+
+    📍 Placement: Same styling and layout as existing buttons. Preferably to the right of "See Features", or on a new line beneath both buttons if needed for mobile responsiveness.
+
+3. 🚫 Hide the pricing section titled "Choose Your Business Platform"
+
+(See Screenshot 6)
+
+    This section shows the Blue Lite, Blue Core, and Blue Elite plans
+
+    Please remove or comment out the entire pricing block from the homepage for now
+
+    We'll reintroduce it later when the paid beta launches
+
+4. 🧭 Optional: Adjust Navigation Bar
+
+    Remove or comment out “Pricing” from the top nav bar
+
+    Keep “Features”, “Roadmap”, and “Login” active
+
+🧼 Final Notes:
+
+    Make sure all removed elements don’t leave empty space or broken layout
+
+    If possible, keep the removed components available in a hidden state so we can re-enable them later
+
+    We’re preparing to reintroduce tiered paid access once the waitlist hits 100+ users
+
+Let me know when these changes are live or if anything needs clarification.

@@ -1,0 +1,80 @@
+Please run full Stripe payments E2E tests (invoices now, subs behind a flag).
+
+1) Invoice payment flow — prove end-to-end
+
+Create a test invoice via the app.
+
+POST /api/invoices/:id/paylink → return Checkout URL.
+
+Pay with Stripe test card 4242 4242 4242 4242.
+
+Webhook (/api/stripe/webhook) should:
+
+verify signature,
+
+be idempotent (ignore duplicate event.id),
+
+on checkout.session.completed or invoice.paid: set payment_status='paid', paid_at=now, save stripe_payment_intent_id; update KPIs.
+
+on invoice.payment_failed / payment_intent.payment_failed: set payment_status='failed'.
+
+Logout → login: invoice still PAID; KPIs persist.
+
+POST /api/invoices/:id/email: send invoice/receipt via SendGrid (HTML + text fallback) with View & Pay (or View Receipt if paid). Log email_to + email_sent_at.
+
+Deliverables
+
+60–90s screen recording of: create invoice → generate pay link → pay → webhook flips to PAID → KPIs update → logout/login persists → send email (show content/log).
+
+DB snapshot of updated fields: payment_status, paid_at, stripe_session_id, stripe_payment_intent_id, email_to, email_sent_at.
+
+Confirm APP_BASE_URL is used for success/cancel redirects and they resolve:
+
+/invoice/success?inv={id}&session_id={sid}
+
+/invoice/cancel?inv={id}
+
+2) Subscriptions — wire behind a feature flag
+
+Env flag: FEATURE_SUBSCRIPTIONS=false by default.
+
+Handle events (already subscribed in Stripe):
+customer.subscription.created|updated|deleted, invoice.paid, invoice.payment_failed, invoice.upcoming (optional), checkout.session.completed.
+
+With flag false: log only, no DB/state changes.
+
+With flag true: implement state machine updates:
+
+created → subscription_status='active'|'trialing', set subscription_id, current_period_end, trial_end, subscription_tier.
+
+updated → sync tier/status; past_due|unpaid|incomplete_expired → mark limited/suspended.
+
+deleted → mark canceled (at period end).
+
+invoice.paid → update last_paid_at, next_renewal_at.
+
+Add/confirm DB fields: subscription_status, subscription_tier, subscription_id, current_period_end, trial_end, last_paid_at, next_renewal_at.
+
+Deliverables
+
+Short recording showing: test subscription checkout via Stripe → events received.
+
+With flag false: logs only. Flip to true → account status/tier updates visible in UI (simple badge on dashboard is fine).
+
+Prove idempotency for subscription events (replay same event.id → no double updates).
+
+3) Safety nets
+
+Rate-limit POST /api/invoices/:id/email (e.g., 5/min per user/IP).
+
+Owner-only access checks on /api/invoices/:id/*.
+
+Add webhook_events_processed table (PK event_id, type, created_at).
+
+(Dev/test only) webhook_events_raw table for debugging.
+
+4) Tests
+
+Add Playwright E2E covering invoice flow above (passes in CI).
+
+Unit test for webhook idempotency (duplicate event.id ignored).

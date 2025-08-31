@@ -1,0 +1,120 @@
+Absolutely — here's a rewritten, **more detailed and specific** prompt for Replit that includes:
+
+* Precise update instructions
+* A request to **simulate and test the flow at least 10 times**
+* Clarification of all user-facing steps
+* A cleaner breakdown for implementation
+
+---
+
+### 🔧 **Prompt for Replit: Update + Test Full Demo Email & Access Automation Flow**
+
+Hi Replit, please review and update the following systems for our **Blue Tradie early access and demo onboarding flow**.
+
+This update affects:
+
+* ✅ Waitlist confirmation email
+* ✅ Early access email automation (with instant access)
+* ✅ Demo login flow
+* ✅ Follow-up emails
+* ✅ Token/milestone logic
+* ✅ Bug testing and reliability
+
+---
+
+### 📩 1. Waitlist Confirmation Email – Update Content
+
+Please update the confirmation email sent to VIP waitlist users to include the **latest details and incentives**:
+
+**Subject line:**
+🎉 You're In! Welcome to the Blue Tradie VIP Waitlist
+
+**Body content should include:**
+
+* Your VIP Member Number: e.g. “You’re VIP #13”
+* 💸 30% off Blue Lite (first year) — valid for the first 100 users
+* 🔥 1,000,000 AI tokens for your 14-day trial
+* 🚀 Full access to the Blue Tradie platform for 14 days
+* 🎥 Founding Member Offer: Share a quick video and unlock permanent perks
+
+Then include this **call-to-action block**:
+
+---
+
+**🚀 Want Early Access Right Now?**
+No need to wait. You can start using Blue Tradie instantly.
+
+Click the button below to get:
+
+* ✅ Your unique **demo code** (format: `Demo{UserNumber}` — auto-generated)
+* ✅ **Step-by-step demo login instructions**
+* ✅ A chance to become a **Founding Member** with lifetime perks
+
+👉 After your 14-day trial, we’ll ask for a quick 90-sec video:
+
+* What was your experience like?
+* Would you recommend it?
+* Can we use it on social media?
+
+---
+
+### ⚙️ 2. Demo Access Email (triggered on CTA click)
+
+When a user clicks **"Get Early Access"**, please auto-send a new email immediately with:
+
+* Their **Demo Code**: format `Demo{UserNumber}`
+* Their **registration details**: name + email
+* Instructions to log in:
+
+  1. Go to [www.bluetradie.com](https://www.bluetradie.com)
+  2. Click **Demo Login** in the top header
+  3. Enter your **name, email, and demo code**
+
+Also include:
+
+> ❗ Having issues? Email [support@bluetradie.com](mailto:support@bluetradie.com) with a short note + screenshot and we’ll fix it fast.
+
+---
+
+### 📆 3. Follow-Up Emails
+
+Please schedule:
+
+* **Day 7 Email**
+  **Subject**: “How’s your Blue Tradie demo going?”
+  Content: Check-in asking for feedback — user can reply directly
+
+* **Day 14 Email**
+  **Subject**: “We’d love a 90-sec video from you 🎥”
+  Content: Invite user to record a 90-second video, tag us on socials, and email the video to us
+  ✅ Unlocks lifetime discounts or extra tokens
+
+---
+
+### 💾 4. Token + Access Logic
+
+Ensure:
+
+* Each demo user receives **1,000,000 tokens**
+* Tokens are correctly shown on dashboard
+* Access expires after 14 days
+* Milestones and features unlock correctly during demo
+
+---
+
+### 🧪 5. Testing Request
+
+Please simulate and test this entire flow end-to-end at least **10 times using test emails**, covering:
+
+* ✅ Waitlist sign-up → Confirmation email
+* ✅ Early access CTA → Demo code + onboarding email
+* ✅ Login with demo code → Token visibility + onboarding steps
+* ✅ 7-day and 14-day email triggers
+* ✅ Feedback/testimonial handling
+* ✅ Bug handling if a user skips steps or enters bad data
+
+Use unique demo codes (e.g. `Demo1001` to `Demo1010`) for testing, and report any bugs found. Confirm that no steps are skipped or broken, and that data is stored correctly.
+
+---
+
+Let me know once all logic is updated, tests are complete, and the system is production-ready. Happy to provide HTML snippets if needed.

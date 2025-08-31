@@ -1,0 +1,41 @@
+ROLE: You are a Senior Full-Stack Engineer + QA Lead. 
+GOAL: Roll the Blue Tradie app back to the stage where the only focus is fixing the **user re-login bug**. 
+Do not add new features or touch other areas until this bug is 100% fixed, verified, and proven with tests.
+
+BUG DESCRIPTION:
+- When a demo user logs out and signs back in, they are sent back into the onboarding wizard instead of being taken to their dashboard with their saved data.
+- Expected behaviour: On first login, onboarding runs once. On all subsequent logins, the user should land directly in their dashboard, with all previously entered jobs/invoices/expenses visible.
+
+CURRENT KNOWNS:
+- Database schema includes an `is_onboarded` flag.
+- Onboarding wizard updates run, but the `is_onboarded` flag is not being checked properly on re-login.
+- Demo sessions may not be persisting this flag in the auth response.
+
+REQUIRED FIXES:
+1. **Onboarding Flag Persistence**
+   - Ensure onboarding completion sets `is_onboarded=true` in the database for the user.
+   - Ensure this flag is included in the user session object and API responses.
+
+2. **Dashboard Redirect Logic**
+   - Update dashboard logic to check `is_onboarded`. 
+   - If `true` → take user to dashboard with their saved data. 
+   - If `false` → redirect to onboarding wizard.
+
+3. **Session Persistence**
+   - Ensure demo sessions correctly persist across logout/login.
+   - Verify the auth middleware (`unifiedAuth`) includes `is_onboarded` in its response.
+
+MANDATORY TESTS (Playwright or equivalent):
+1. New demo user → login → goes through onboarding once → sets `is_onboarded=true`.
+2. Logout → login again → skips onboarding → lands on dashboard with previous jobs/invoices/expenses still visible.
+3. Add job/invoice/expense → logout → login again → data still present on dashboard.
+
+DELIVERABLE:
+- Provide exact code changes (files + lines edited).
+- Provide logs or screenshots proving the above 3 tests pass.
+- Do not close this task until all 3 tests are green and confirmed by an end-to-end walkthrough.
+
+GUARDRAILS:
+- Do not add new endpoints or features.
+- Do not modify unrelated parts of the codebase (e.g., guided tours, welcome modals).
+- Focus ONLY on making logout/login return the user to their saved data and bypass onboarding if already completed.

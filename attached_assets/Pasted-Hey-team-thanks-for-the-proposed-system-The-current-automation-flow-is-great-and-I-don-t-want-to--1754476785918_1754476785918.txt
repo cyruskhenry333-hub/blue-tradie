@@ -1,0 +1,54 @@
+Hey team — thanks for the proposed system. The current automation flow is great and I don’t want to change the mechanics right now.
+
+Please don’t build any new pages or change the credential delivery process.
+✅ What I’d like you to do:
+
+Please redesign the content of the welcome email only (the first one users receive after signing up). I want it to feel more personal, exciting, and aligned with the Blue Tradie vibe. Here’s what I want included:
+📩 New Welcome Email Content
+
+Subject line suggestion:
+
+    🔧 You're In! Welcome to the Blue Tradie Revolution
+
+Body content:
+
+    Welcome and gratitude:
+    A warm thank you for being one of the first 100 to join the vision. Mention they’re helping shape the future of tradie tech.
+
+    Discounts/Perks:
+    A reminder of the special offer they've unlocked (based on their tier — e.g. 50% off, bonus tokens, etc.)
+
+    Exciting features to look forward to:
+    Include highlights like:
+
+        🧠 AI automation across quoting, invoices, and job management
+
+        🔍 Tradie directory
+
+        📱 Offline-ready mobile experience
+
+        🎙️ Voice-to-text tools
+
+        🤖 Smart AI agents (Business, Marketing, Legal, Accounting)
+
+        💬 Instant support coming soon
+
+    Activation section (reworded CTA):
+    Frame it like this:
+
+        "Can’t wait for all 100 signups to go live? Want to dive in now and help us test?
+        Great — we can hook you up early. Just click below to activate your demo access."
+
+    CTA Button: Activate Your Demo Access
+
+    Disclaimer / Transparency Note:
+    Please add a casual, honest line like:
+
+        “This is a live trial demo — things may break, features might change, and we’re still ironing things out. But we’ve worked hard to make this as smooth as possible. If Blue Tradie becomes a full subscription platform, we’ll be adding more robust security and tighter access controls.”
+
+    Visual polish:
+    Keep the branding sharp, clean layout, mobile-friendly, with friendly tone and Aussie flavour.
+
+Let me know if you want me to provide final copy or tweak anything — but for now, this is just a request to update the content of the existing welcome email only.
+
+Thanks!

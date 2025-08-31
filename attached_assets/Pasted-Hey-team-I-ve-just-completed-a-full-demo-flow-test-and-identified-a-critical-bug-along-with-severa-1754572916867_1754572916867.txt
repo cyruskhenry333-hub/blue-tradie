@@ -1,0 +1,69 @@
+Hey team,
+
+I’ve just completed a full demo flow test and identified a critical bug along with several UI/state sync issues. Here's the breakdown:
+🔄 1. Onboarding Wizard Triggers After Re-login (Incorrect Behavior)
+
+Steps to reproduce:
+
+    Sign up via demo
+
+    Complete onboarding (all checklist stages done)
+
+    Sign out
+
+    Sign back in
+
+Expected:
+User should be routed directly to /dashboard if isOnboarded === true
+
+Actual:
+User is incorrectly routed back through the onboarding flow, despite:
+
+    isOnboarded: true is set in the DB and returned via API
+
+    All onboarding data is visible once you reach the dashboard
+
+Fix:
+Update the login/redirection logic to properly check isOnboarded state on login, and skip onboarding if true.
+
+🚫 Please do not create a new workaround, middleware, or split state logic. Just ensure existing isOnboarded check gates the wizard correctly.
+📦 2. Missing “Back to Dashboard” Navigation
+
+Issue:
+When inside Jobs, Invoices, or Expenses pages, there’s no consistent way to return to the dashboard.
+
+Fix:
+Add a Back to Dashboard button on each page (recommended position: top-left), preferably using a shared component for DRYness.
+📊 3. Dashboard Widgets Don’t Update After Actions
+
+Issue:
+Adding a Job, Expense, or Invoice does not update the dashboard cards (e.g., Today’s Jobs, This Week’s Expenses) unless manually refreshed.
+
+Fix:
+Ensure these widgets subscribe to or pull the latest data after creation events — likely needs a refetch() or state update trigger on success.
+💰 4. Client Book “Total Value” Displays Incorrectly
+
+Issue:
+Total Value field at top-right is currently showing $00.000.00 regardless of added jobs/invoices.
+
+Fix:
+Check the data binding and formatting logic — likely an empty or misformatted sum. Confirm it's dynamically calculating from scheduled/invoiced job data.
+⚠️ Final Notes:
+
+    Please don’t make any new structural changes, assumptions, or logic rewrites unless explicitly confirmed.
+
+    Only address the bugs outlined above.
+
+    Simulate this as a real user with demo login to verify correct behavior.
+
+    Once complete, confirm:
+
+        Re-login skips onboarding
+
+        Widgets sync immediately
+
+        Navigation works as expected
+
+        UI shows correct totals
+
+Thanks — let me know once all resolved and deployed.

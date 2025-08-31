@@ -1,0 +1,83 @@
+Hey Replit team 👋
+
+We’re ready to take Blue Tradie’s AI system to the next stage and would love your help to implement a smart hybrid system that blends real AI capabilities with the simulation we've built so far. We also want to confirm the pricing model, and refine our token strategy based on predicted usage per tier.
+
+Here’s what we’re hoping to do — and would appreciate your input on the best way to approach it:
+
+---
+
+### ✅ PART 1 – SMART AI FALLBACK SYSTEM (HYBRID SIMULATION + OPENAI)
+
+We’d like to introduce real OpenAI fallback only when needed, while still keeping the system cost-efficient and self-learning.
+
+**Proposed Flow:**
+1. When a user asks a question:
+   - First check if there’s a match in the simulated AI response library.
+   - If yes → return the pre-written response (no cost).
+   - If no → call the OpenAI GPT-4o API to generate a response.
+   - Automatically store that response in the simulation database, linked to the question, so the system can use it for future similar queries (avoiding repeated API calls).
+
+2. Ideally, include **fuzzy or semantic matching** for detecting “similar” questions.
+
+3. Track token usage per OpenAI call, by user, so we have usage transparency even if we don’t bill per token yet.
+
+4. (Optional for future): Add a toggle for whether newly generated responses should auto-save or wait for admin review/approval.
+
+We’re aiming for a **self-expanding knowledge base** that minimizes API usage over time — without needing constant manual updates.
+
+---
+
+### ✅ PART 2 – TOKEN PRICING MODEL CONFIRMATION
+
+We’ve calculated our cost per token based on your recommendation of GPT-4.1 Mini pricing, plus a 20% markup for our margin.
+
+Can you confirm that the following structure looks accurate on your end?
+
+**Estimated pricing (blended input/output):**
+
+| Tokens      | USD     | AUD (20% markup) | NZD (20% markup) |
+|-------------|---------|------------------|------------------|
+| 1,000       | $0.001  | $0.00182         | $0.00200         |
+| 10,000      | $0.01   | $0.01824         | $0.02004         |
+| 100,000     | $0.10   | $0.1824          | $0.2004          |
+| 1,000,000   | $1.00   | $1.824           | $2.004           |
+
+Let us know if these numbers reflect your backend token economics — or if there's anything we should adjust in our calculations.
+
+---
+
+### ✅ PART 3 – TOKEN ALLOCATION PER PLAN (BASED ON FEATURE ACCESS + EXPECTED USAGE)
+
+We’d like to ensure that each pricing tier **includes enough tokens by default** so the average user never has to think about topping up. But we also want to make sure it stays cost-effective and scalable for us.
+
+Rather than assuming higher plans always use more, we’re basing allocations on:
+- **Feature access**
+- **Likely usage behaviour**
+- **How often users will interact with AI advisors vs. automations**
+
+Here’s our working draft:
+
+| Plan            | Token Cap | Feature Focus / Use Case                                                                 |
+|------------------|-----------|------------------------------------------------------------------------------------------|
+| **Demo**         | 5,000     | Just enough to trial advisory agents and get a feel for the platform                    |
+| **Blue Elite**   | 25,000    | Solo tradies with access to AI advisors (Accountant, Marketer, Coach, Legal). While solo, they may use it often — but it’s limited to guidance and support, not automation. |
+| **Blue Core**    | 100,000   | Access to AI automation features (e.g. quote generation, follow-ups). Mid-level usage expected across key functions. |
+| **Blue Teams**   | 300,000   | High-volume use across multiple staff. Includes both advisors and automations. Designed for larger operations. |
+
+We’d love your input on:
+- Whether these allocations make sense based on actual token consumption patterns you’ve seen
+- If they’re likely to fully cover monthly usage without over or under-shooting
+- Whether you'd recommend adjusting any caps or offering buffer zones to accommodate outliers
+
+---
+
+### 🙏 Your Advice
+
+We’re open to any suggestions you might have to:
+- Improve the fallback AI structure
+- Optimize performance and token efficiency
+- Ensure the pricing and allocations are sustainable for both user satisfaction and long-term growth
+
+Let us know what you think — and what the next step would be if we want to begin implementing the fallback system while keeping the current simulation running for now.
+
+Thanks again for your continued support!

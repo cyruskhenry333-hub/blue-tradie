@@ -1,0 +1,62 @@
+Hey team — thanks again for the clear confirmation on the current implementation of the discount and reward system.
+
+We’ve reviewed your response, and everything looks solid. Based on your confirmation, here are a few final updates and cleanup suggestions we'd like to move forward with. Please confirm if these are safe to implement. If so, proceed cautiously and ensure no current functionality is broken or affected.
+✅ 1. Remove Beta Tier System (Now Deprecated)
+
+    We agree this system should be fully removed.
+
+    Please go ahead and delete the backend logic for:
+
+        Founding Tradie
+
+        Early Supporter
+
+        Beta Tester
+
+    Also remove:
+
+        Any unused badge logic
+
+        Any deprecated references in config or UI
+
+❌ 2. Restrict Demo Access to First 100 Users Only
+
+    Currently, demo access is still open to the general public.
+
+    Please update the logic to ensure only users who are part of the First 100 can access the 14-day trial and 1,000,000 AI tokens.
+
+    Manual early access approval should still be possible (via dashboard toggle or backend override).
+
+🟢 3. Frontend Referral Dashboard Needed
+
+    Backend logic is working great — thank you!
+
+    Next step: please create a basic frontend component that displays:
+
+        Unique referral link or code
+
+        Number of successful referrals
+
+        Total $ earned via referral rewards
+
+This can live in the dashboard section of the app for logged-in users.
+🧹 4. Remove Homepage Green Box Text
+
+    Please remove the green banner directly under the main homepage headline that says:
+
+    🚀 Start free with 1 million AI tokens — no credit card required
+    Full access to your AI business team for 14 days
+
+    The message is redundant and visually clashes with the cleaner, professional look we’re going for.
+
+    The details are already clear in the signup flow and don’t need to be repeated here.
+
+🧠 Notes:
+
+    All changes should be implemented cautiously — especially demo restrictions and UI edits.
+
+    Please don’t delete or disrupt any currently functioning logic unless confirmed to be unused or deprecated.
+
+    Let us know if you need anything reviewed before deploying these updates.
+
+Thanks again — we're really happy with the progress!

@@ -1,0 +1,48 @@
+Hi team — just a heads-up that I’m currently going through the platform using a demo/dummy account to simulate the real 14-day trial experience that users will go through.
+
+I want to flag several things that don’t appear to be working, and also ask that these features be properly tested and verified on your end — I’m finding myself repeatedly having to double-check fixes or features that should already be functional, which is becoming frustrating and time-consuming.
+⚠️ Issues Found During Demo Simulation:
+
+    Token Counter Displays 2,000 Instead of 1,000,000
+
+        This should show 1 million tokens for demo users — currently it displays 2,000.
+
+        Please confirm that demo accounts are correctly assigned the full 1M token allocation.
+
+    “Set Your Goals & Vision” Doesn’t Register as Complete
+
+        After submitting my goals/vision:
+
+            The checklist item does not get marked as complete
+
+            The section under “Quick Glance at Your Business” labeled “Set Your Business Goals” remains untouched
+
+        Please clarify: are “Set Your Goals & Vision” and “Set Your Business Goals” meant to be the same function? If so, they’re not syncing properly.
+
+    “Complete Your Profile” Checklist Item Doesn’t Work
+
+        I uploaded a logo, but it didn’t update visually
+
+        The checklist didn’t register it as complete
+
+        Please test this flow to ensure it works end-to-end
+
+    Invoice Creation Isn’t Functional
+
+        Attempting to create an invoice doesn’t do anything
+
+        No draft, no response, no error
+
+    AI Chat Agent Doesn’t Work
+
+        Tried chatting with the AI agent and got no response or visible interaction
+
+🙏 Request:
+
+Can you please simulate the actual user journey from a demo account, test these items directly, and confirm that they work as expected?
+
+I’d really appreciate not having to catch broken flows that should be testable internally — especially during such a critical stage of rollout.
+
+Please let me know once these have been reviewed and fixed. Happy to test again when things are fully functional.
+
+Thanks.

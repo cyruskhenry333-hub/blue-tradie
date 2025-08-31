@@ -1,0 +1,81 @@
+After running a live test of the demo login flow, I’ve identified a critical inconsistency that needs immediate resolution before further testing.
+
+Observed Issue
+
+Signing up and using the demo login link initially dropped me on the demo dashboard.
+
+After reloading and navigating Home, I was redirected to the main user dashboard.
+
+The tour guide auto-started even though I had not completed the onboarding wizard.
+
+This indicates that onboarding state, demo routing, and tour triggers are not aligned. For a production SaaS platform, this creates broken UX, inconsistent state management, and a risk of users bypassing critical onboarding steps.
+
+Required Actions
+
+Enforce Onboarding Gate Server-Side
+
+All routes (except /onboarding, /auth/*, /demo/*) must check onboarding_complete.
+
+If incomplete → 302 redirect to /onboarding.
+
+No reliance on client-side checks.
+
+Single Source of Truth for Onboarding State
+
+Confirm the canonical field (org_user.onboarding_complete or org.settings.onboarding_complete).
+
+All routing, middleware, and components must reference this field only.
+
+Provide the exact model/schema snippet being used.
+
+Demo Flow Alignment
+
+Demo sessions must either:
+
+Stay within a dedicated demo org with onboarding_complete=true, or
+
+Respect the same onboarding gate as any new org.
+
+If Home or org switching occurs, the server must re-check onboarding state and redirect back to /onboarding if incomplete.
+
+Avoid silent context switches that drop users into production orgs without gating.
+
+Tour Trigger Logic
+
+Tour should only start when onboarding_complete === true.
+
+If tour is meant to start during onboarding, trigger it explicitly from onboarding steps — not from dashboard mount.
+
+Provide the code condition currently starting the tour.
+
+Redirect & Session Consistency
+
+Demo magic-link verify must:
+
+Set a session cookie with correct attributes: Secure; HttpOnly; SameSite=Lax; Domain=.bluetradie.com; Path=/.
+
+Redirect to a single canonical host (bluetradie.com OR www.bluetradie.com — but not both).
+
+Share the Set-Cookie + Location headers from this response.
+
+Deliverables to Confirm Back
+
+Path + snippet of the middleware/server code enforcing onboarding gate.
+
+The exact field and table storing onboarding completion.
+
+Snippet of the tour trigger logic.
+
+Example of magic-link verify response headers (with token redacted).
+
+Acceptance Criteria for Retest
+
+Fresh demo login → must hit /onboarding until onboarding is fully completed.
+
+Clicking Home or switching orgs cannot bypass onboarding.
+
+Tour only launches after onboarding is complete, unless explicitly triggered during onboarding.
+
+Session persists across reload with no redirect glitches.
+
+Please implement these changes and confirm once redeployed so I can rerun the test.
