@@ -380,7 +380,32 @@ app.use((req, res, next) => {
     app.use('/', previewDemoRoutes.default);
   }
   
-  const server = await registerRoutes(app);
+let server: any;
+try {
+  // Only try full auth if all Replit OAuth env vars exist
+  if (
+    process.env.REPLIT_CLIENT_ID &&
+    process.env.REPLIT_CLIENT_SECRET &&
+    process.env.REPLIT_REDIRECT_URI &&
+    process.env.REPLIT_DOMAINS
+  ) {
+    server = await registerRoutes(app);
+  } else {
+    throw new Error('Replit OAuth env not set');
+  }
+} catch (err: any) {
+  console.warn(
+    '[BOOT] Auth setup failed or not configured; enabling demo auth in production. Reason:',
+    err?.message ?? err
+  );
+  // Turn on the preview/demo auth routes even in production
+  const previewDemoRoutes: any = await import('./routes/preview-demo-auth');
+  app.use('/', previewDemoRoutes.default ?? previewDemoRoutes);
+
+  // Create a plain HTTP server for the Express app
+  const { createServer } = await import('node:http');
+  server = createServer(app);
+}
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
