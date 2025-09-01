@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
-import version from "../version.json";
+import pkg from "../package.json";
+const version = { build: pkg.version };
 
 export function initSentry() {
   // Only initialize Sentry if DSN is provided
