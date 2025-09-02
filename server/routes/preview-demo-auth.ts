@@ -15,6 +15,25 @@ const VALID_DEMO_CODES = [
   `test-demo-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`
 ];
 
+// Returns a demo code in preview/prod-demo so the client always gets JSON
+router.post('/api/demo/request', async (_req, res) => {
+  try {
+    // daily code (already accepted by VALID_DEMO_CODES)
+    const todayCode = `test-demo-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+
+    // Be generous: return both keys some UIs look for
+    res.json({
+      success: true,
+      code: todayCode,
+      demoCode: todayCode,
+      message: 'Demo code generated.'
+    });
+  } catch (err) {
+    console.error('[PREVIEW DEMO] request error:', err);
+    res.status(500).json({ success: false, error: 'request_failed' });
+  }
+});
+
 // POST /auth/demo/verify - Code-entry only verification
 router.post('/api/demo/verify', async (req, res) => {
   if (!isPreview || !PREVIEW_DISABLE_MAGIC_LINKS) {
