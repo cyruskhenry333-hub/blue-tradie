@@ -16,7 +16,7 @@ const VALID_DEMO_CODES = [
 ];
 
 // POST /auth/demo/verify - Code-entry only verification
-router.post('/auth/demo/verify', async (req, res) => {
+router.post('/api/demo/verify', async (req, res) => {
   if (!isPreview || !PREVIEW_DISABLE_MAGIC_LINKS) {
     return res.status(403).json({ error: 'Code verification only available in preview mode' });
   }
