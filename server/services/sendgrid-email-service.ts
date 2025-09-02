@@ -38,7 +38,11 @@ export class SendGridEmailService {
   constructor() {
     this.mailService = mailService;
     this.isTestMode = !this.mailService;
-    this.defaultFrom = process.env.FROM_EMAIL || 'Blue Tradie Team <noreply@sendgrid.net>';
+   const fromAddr = process.env.EMAIL_FROM;                 // e.g. support@bluetradie.com
+const fromName = process.env.EMAIL_FROM_NAME || 'Blue Tradie';
+if (!fromAddr) throw new Error('EMAIL_FROM is not set');
+this.defaultFrom = `${fromName} <${fromAddr}>`;
+
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
@@ -88,7 +92,11 @@ export class SendGridEmailService {
       const response = await this.mailService!.send(msg);
       console.log(`📧 [SENDGRID SUCCESS] Email sent to ${options.to}`);
       console.log(`📧 [SENDGRID RESPONSE] Status: ${response[0]?.statusCode}, MessageId: ${response[0]?.headers?.['x-message-id']}`);
-      
+      const status = response[0]?.statusCode ?? 0;
+if (status < 200 || status >= 300) {
+  throw new Error(`SendGrid non-2xx status: ${status}`);
+}
+
       // Track email usage
       const usageMonitor = UsageMonitor.getInstance();
       usageMonitor.trackEmail();
