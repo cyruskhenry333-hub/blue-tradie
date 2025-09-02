@@ -1,4 +1,4 @@
-import { emailService } from '../services/sendgrid-email-service';
+import { emailService } from '../services/sendgrid-email-services';
 import express from 'express';
 
 const router = express.Router();
@@ -27,8 +27,6 @@ router.post('/api/demo/request', async (req, res) => {
     const todayCode = `test-demo-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
 
     // Send via SendGrid
-    const { SendGridEmailService } = await import('../services/sendgrid-email-service');
-    const emailService = new SendGridEmailService();
 
     const appBase = process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com';
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'there';
