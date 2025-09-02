@@ -375,10 +375,9 @@ app.use((req, res, next) => {
   process.env.PREVIEW_DISABLE_MAGIC_LINKS = 'true';
   
   // Preview-only demo auth routes
-if (process.env.ENABLE_DEMO_ROUTES === 'true') {
-  const previewDemoRoutes = await import('./routes/preview-demo-auth');
-  app.use('/', previewDemoRoutes.default);
-}
+// Demo auth routes (mount in all envs – code-only)
+const previewDemoRoutes = await import('./routes/preview-demo-auth');
+app.use('/', previewDemoRoutes.default);
 
 let server: any;
 try {
