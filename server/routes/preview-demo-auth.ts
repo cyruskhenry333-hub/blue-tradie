@@ -1,3 +1,4 @@
+import { emailService } from '../services/sendgrid-email-service';
 import express from 'express';
 
 const router = express.Router();
