@@ -15,19 +15,58 @@ const VALID_DEMO_CODES = [
   `test-demo-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`
 ];
 
-// Returns a demo code in preview/prod-demo so the client always gets JSON
-router.post('/api/demo/request', async (_req, res) => {
+// Send a demo code email (works in preview/prod-demo)
+router.post('/api/demo/request', async (req, res) => {
   try {
-    // daily code (already accepted by VALID_DEMO_CODES)
+    const { firstName, lastName, email, country, trade } = req.body || {};
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, error: 'email_required' });
+    }
+
     const todayCode = `test-demo-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
 
-    // Be generous: return both keys some UIs look for
-    res.json({
+    // Send via SendGrid
+    const { SendGridEmailService } = await import('../services/sendgrid-email-service');
+    const emailService = new SendGridEmailService();
+
+    const appBase = process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com';
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'there';
+
+    const html = `
+      <p>Hi ${fullName},</p>
+      <p>Your Blue Tradie demo code is:</p>
+      <p style="font-size:22px;font-weight:700;letter-spacing:1px">${todayCode}</p>
+      <p>Click below and paste your code:</p>
+      <p style="margin-top:20px">
+        <a href="${appBase}/demo-request"
+           style="background:#3b82f6;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">
+           Enter Demo Code
+        </a>
+      </p>
+      <hr/>
+      <p style="color:#6b7280;font-size:12px">Country: ${country || '-'} • Trade: ${trade || '-'}</p>
+    `;
+
+    await emailService.sendEmail({
+      to: email,
+      subject: 'Your Blue Tradie Demo Code',
+      html
+    });
+
+    console.log(`[DEMO EMAIL] sent to ${email}`);
+
+    return res.json({
       success: true,
       code: todayCode,
       demoCode: todayCode,
-      message: 'Demo code generated.'
+      message: 'Email sent'
     });
+  } catch (err) {
+    console.error('[PREVIEW DEMO] request error:', err);
+    return res.status(500).json({ success: false, error: 'email_send_failed' });
+  }
+});
+
   } catch (err) {
     console.error('[PREVIEW DEMO] request error:', err);
     res.status(500).json({ success: false, error: 'request_failed' });
