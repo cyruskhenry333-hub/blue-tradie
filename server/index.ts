@@ -375,11 +375,11 @@ app.use((req, res, next) => {
   process.env.PREVIEW_DISABLE_MAGIC_LINKS = 'true';
   
   // Preview-only demo auth routes
-  if (process.env.NODE_ENV !== 'production') {
-    const previewDemoRoutes = await import('./routes/preview-demo-auth');
-    app.use('/', previewDemoRoutes.default);
-  }
-  
+if (process.env.ENABLE_DEMO_ROUTES === 'true') {
+  const previewDemoRoutes = await import('./routes/preview-demo-auth');
+  app.use('/', previewDemoRoutes.default);
+}
+
 let server: any;
 try {
   // Only try full auth if all Replit OAuth env vars exist
