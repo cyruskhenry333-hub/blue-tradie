@@ -1,4 +1,4 @@
-import { emailService } from '../services/sendgrid-email-services';
+import { emailService } from '../services/sendgrid-email-service';
 import express from 'express';
 
 const router = express.Router();
@@ -66,11 +66,6 @@ router.post('/api/demo/request', async (req, res) => {
   }
 });
 
-  } catch (err) {
-    console.error('[PREVIEW DEMO] request error:', err);
-    res.status(500).json({ success: false, error: 'request_failed' });
-  }
-});
 
 // POST /auth/demo/verify - Code-entry only verification
 router.post('/api/demo/verify', async (req, res) => {
