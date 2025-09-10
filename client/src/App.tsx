@@ -24,6 +24,7 @@ import Settings from "@/pages/settings";
 import WaitlistPage from "@/pages/waitlist";
 import DemoDashboard from "@/pages/demo-dashboard";
 import DemoDashboardAdvanced from "@/pages/demo-dashboard-advanced";
+import ClientPortal from "@/pages/ClientPortal";
 import Migration from "@/pages/migration";
 import TestimonialPage from "@/pages/testimonial";
 
@@ -45,6 +46,9 @@ import EarlyAccessSent from "@/pages/early-access-sent-simple";
 import EarlyAccessError from "@/pages/early-access-error-simple";
 import DemoAccessConfirmed from "@/pages/demo-access-confirmed";
 import TestEmailButton from "@/pages/test-email-button";
+import AIAdvisors from "@/pages/ai-advisors";
+import TradieDirectory from "@/pages/tradie-directory";
+import Automation from "@/pages/automation";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
 
@@ -92,6 +96,7 @@ function Router() {
             <Route path="/demo-access-confirmed" component={DemoAccessConfirmed} />
             <Route path="/test-email-button" component={TestEmailButton} />
             <Route path="/roadmap" component={PublicRoadmap} />
+            <Route path="/client/:jobId/:token" component={ClientPortal} />
             
             {/* Redirects */}
             <Route path="/vip" component={() => { window.location.href = '/demo'; return null; }} />
@@ -123,6 +128,9 @@ function Router() {
                 <Route path="/settings" component={Settings} />
                 <Route path="/testimonial" component={TestimonialPage} />
                 <Route path="/referrals" component={ReferralDashboard} />
+                <Route path="/ai-advisors" component={AIAdvisors} />
+                <Route path="/directory" component={TradieDirectory} />
+                <Route path="/automation" component={Automation} />
 
               </>
             )}
