@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AppUser } from "@shared/types/user";
+import { toAppUser } from "@shared/utils/toAppUser";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -79,10 +81,11 @@ export default function BusinessSetupChecklist() {
   const taxSetupDescription = isNewZealand ? "GST returns, PAYE, record keeping systems" : "BAS, PAYG, record keeping systems";
   const insuranceUrl = isNewZealand ? "https://www.anz.co.nz/business/insurance/" : "https://www.suncorp.com.au/insurance/business";
 
-  const { data: setupStatus } = useQuery({
+  const { data: setupStatusData } = useQuery({
     queryKey: ["/api/user/setup-status"],
     retry: false,
   });
+  const setupStatus = toAppUser(setupStatusData);
 
   const updateSetupMutation = useMutation({
     mutationFn: async (data: { itemId: string; status: string; details?: Partial<BusinessDetails> }) => {

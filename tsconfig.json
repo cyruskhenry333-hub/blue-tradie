@@ -1,6 +1,6 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "include": ["client", "server", "shared", "server/types/**/*.d.ts"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts", "server/email-test-standalone.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
@@ -15,7 +15,7 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "express-session"],
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"]

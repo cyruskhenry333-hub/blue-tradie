@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import Stripe from "stripe";
 import { storage } from "../storage";
+import type { User } from "@shared/schema";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -29,7 +30,7 @@ export function registerSubscriptionRoutes(app: Express) {
       });
     }
 
-    let user = req.user;
+    let user = req.user as User;
 
     try {
       // Check if user already has an active subscription
@@ -115,7 +116,7 @@ export function registerSubscriptionRoutes(app: Express) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = req.user;
+    const user = req.user as User;
 
     try {
       if (!user.stripeSubscriptionId) {
@@ -132,7 +133,7 @@ export function registerSubscriptionRoutes(app: Express) {
         hasSubscription: true,
         subscriptionId: subscription.id,
         status: subscription.status,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         tier: user.subscriptionTier || 'Blue Core'
       });

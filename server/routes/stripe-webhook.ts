@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import Stripe from "stripe";
+import type Stripe from "stripe";
+import StripeClient from "stripe";
 import { storage } from "../storage";
 import express from "express";
 
@@ -7,7 +8,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new StripeClient(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-07-30.basil",
 });
 
@@ -17,7 +18,7 @@ export function registerStripeWebhookRoutes(app: Express) {
     // Use express.raw() to get the raw body for signature verification
     express.raw({ type: 'application/json' }),
     async (req: Request, res: Response) => {
-      const sig = req.headers['stripe-signature'];
+      const sig = req.headers["stripe-signature"] as string;
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
       if (!webhookSecret) {
@@ -26,14 +27,13 @@ export function registerStripeWebhookRoutes(app: Express) {
       }
 
       let event: Stripe.Event;
-
+      
       try {
-        // Verify the webhook signature
-        event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
+        event = stripe.webhooks.constructEvent(req.body as any, sig, webhookSecret);
         console.log('✅ Stripe webhook signature verified successfully');
       } catch (err) {
         console.error('❌ Stripe webhook signature verification failed:', err);
-        return res.status(400).send(`Webhook signature verification failed: ${err}`);
+        return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
       }
 
       // Log the full payload for debugging
@@ -53,25 +53,21 @@ export function registerStripeWebhookRoutes(app: Express) {
           return;
         }
 
-        switch (event.type) {
-          case 'checkout.session.completed':
-            await handleCheckoutSessionCompleted(event);
-            break;
-
-          case 'invoice.paid':
-            await handleInvoicePaid(event);
-            break;
-
-          case 'invoice.payment_failed':
-            await handleInvoicePaymentFailed(event);
-            break;
-
-          case 'payment_intent.payment_failed':
-            await handlePaymentIntentFailed(event);
-            break;
-
-          default:
-            console.log(`🔄 Unhandled event type: ${event.type}`);
+        // when branching:
+        if (event.type === "checkout.session.completed") {
+          const session = event.data.object as Stripe.Checkout.Session;
+          await handleCheckoutSessionCompleted(event, session);
+        } else if (event.type === "invoice.paid") {
+          const invoice = event.data.object as Stripe.Invoice;
+          await handleInvoicePaid(event, invoice);
+        } else if (event.type === "invoice.payment_failed") {
+          const invoice = event.data.object as Stripe.Invoice;
+          await handleInvoicePaymentFailed(event, invoice);
+        } else if (event.type === "payment_intent.payment_failed") {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          await handlePaymentIntentFailed(event, paymentIntent);
+        } else {
+          console.log(`🔄 Unhandled event type: ${event.type}`);
         }
 
         // Mark event as processed
@@ -93,8 +89,7 @@ export function registerStripeWebhookRoutes(app: Express) {
   );
 }
 
-async function handleCheckoutSessionCompleted(event: Stripe.Event) {
-  const session = event.data.object as Stripe.Checkout.Session;
+async function handleCheckoutSessionCompleted(event: Stripe.Event, session: Stripe.Checkout.Session) {
   
   console.log('💳 Processing checkout.session.completed:', {
     sessionId: session.id,
@@ -126,15 +121,14 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   }
 }
 
-async function handleInvoicePaid(event: Stripe.Event) {
-  const invoice = event.data.object as Stripe.Invoice;
+async function handleInvoicePaid(event: Stripe.Event, invoice: Stripe.Invoice) {
   
   console.log('✅ Processing invoice.paid:', {
     invoiceId: invoice.id,
     customerEmail: invoice.customer_email,
     amountPaid: invoice.amount_paid,
     currency: invoice.currency,
-    subscriptionId: invoice.subscription as string,
+    subscriptionId: (invoice as any).subscription || '',
     customerId: invoice.customer,
     invoiceNumber: invoice.number,
     paidAt: new Date(invoice.status_transitions?.paid_at || 0 * 1000).toISOString()
@@ -148,7 +142,7 @@ async function handleInvoicePaid(event: Stripe.Event) {
       await storage.updateInvoicePaymentStatus(
         invoiceId,
         'paid',
-        invoice.payment_intent as string,
+        (invoice as any).payment_intent || null,
         new Date(invoice.status_transitions?.paid_at || 0 * 1000)
       );
       
@@ -159,15 +153,14 @@ async function handleInvoicePaid(event: Stripe.Event) {
   }
 }
 
-async function handleInvoicePaymentFailed(event: Stripe.Event) {
-  const invoice = event.data.object as Stripe.Invoice;
+async function handleInvoicePaymentFailed(event: Stripe.Event, invoice: Stripe.Invoice) {
   
   console.log('❌ Processing invoice.payment_failed:', {
     invoiceId: invoice.id,
     customerEmail: invoice.customer_email,
     amountDue: invoice.amount_due,
     currency: invoice.currency,
-    subscriptionId: invoice.subscription as string,
+    subscriptionId: (invoice as any).subscription || '',
     customerId: invoice.customer,
     invoiceNumber: invoice.number,
     attemptCount: invoice.attempt_count,
@@ -189,8 +182,7 @@ async function handleInvoicePaymentFailed(event: Stripe.Event) {
   }
 }
 
-async function handlePaymentIntentFailed(event: Stripe.Event) {
-  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+async function handlePaymentIntentFailed(event: Stripe.Event, paymentIntent: Stripe.PaymentIntent) {
   
   console.log('❌ Processing payment_intent.payment_failed:', {
     paymentIntentId: paymentIntent.id,

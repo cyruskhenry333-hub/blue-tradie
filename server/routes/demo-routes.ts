@@ -24,7 +24,7 @@ const resendSchema = z.object({
 
 export function registerDemoRoutes(app: Express) {
   // Request demo code
-  app.post('/api/demo/request', async (req, res) => {
+  app.post('/api/demo/request-code', async (req, res) => {
     try {
       const data = demoRequestSchema.parse(req.body);
       
@@ -251,5 +251,30 @@ export function registerDemoRoutes(app: Express) {
         message: "Unable to resend email. Please try again."
       });
     }
+  });
+
+  // Demo dashboard data endpoint
+  app.get('/api/demo/dashboard', (req, res) => {
+    // Return sample dashboard data for demo
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: 'demo-user',
+          firstName: 'Demo',
+          lastName: 'User',
+          businessName: 'Demo Electrical Services',
+          totalEarnings: 24500,
+          jobsThisMonth: 8,
+          unpaidInvoices: 3200,
+          completedJobs: 15
+        },
+        recentJobs: [
+          { id: '1', description: 'Kitchen rewiring', status: 'completed', amount: 1200 },
+          { id: '2', description: 'Outlet installation', status: 'in-progress', amount: 350 },
+          { id: '3', description: 'Safety inspection', status: 'scheduled', amount: 180 }
+        ]
+      }
+    });
   });
 }

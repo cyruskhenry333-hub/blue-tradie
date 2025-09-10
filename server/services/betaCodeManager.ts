@@ -66,7 +66,7 @@ export class BetaCodeManager {
     }
 
     // Check if code has reached max uses
-    if (codeData.currentUses >= codeData.maxUses) {
+    if ((codeData.currentUses ?? 0) >= (codeData.maxUses ?? 1)) {
       return { valid: false, message: "This invite code has already been used" };
     }
 
@@ -74,7 +74,7 @@ export class BetaCodeManager {
     await db
       .update(betaCodes)
       .set({ 
-        currentUses: codeData.currentUses + 1,
+        currentUses: (codeData.currentUses ?? 0) + 1,
         usedBy: userId,
         usedAt: new Date()
       })

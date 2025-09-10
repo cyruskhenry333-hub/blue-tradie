@@ -1,3 +1,4 @@
+/// <reference path="./types/express-session.d.ts" />
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
 import { registerRoutes } from "./routes";
@@ -7,7 +8,7 @@ import { domainRedirectMiddleware } from "./middleware/domain-redirect";
 import { passwordGateMiddleware, handlePasswordGate } from "./middleware/password-gate";
 import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
-import version from "../version.json";
+import version from "./version.json";
 
 // Initialize Sentry before everything else
 initSentry();

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import type { AppUser } from "@shared/types/user";
+import { toAppUser } from "@shared/utils/toAppUser";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,10 +41,11 @@ export default function InvoiceForm({ initialData, onSuccess }: InvoiceFormProps
   const queryClient = useQueryClient();
 
   // Get user info for GST rate
-  const { data: user } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+  const user = toAppUser(userData);
 
   const form = useForm<InvoiceForm>({
     resolver: zodResolver(invoiceSchema),

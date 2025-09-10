@@ -91,7 +91,7 @@ export function TestimonialsSection({ limit = 6, showHeader = true }: Testimonia
                     {testimonial.name || "Blue Tradie User"}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {new Date(testimonial.createdAt).toLocaleDateString()}
+                    {testimonial.createdAt ? new Date(testimonial.createdAt).toLocaleDateString() : 'Recent'}
                   </p>
                 </div>
               </div>

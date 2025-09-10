@@ -13,16 +13,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { HardHat, ArrowLeft, User, Building, MapPin, Flag, Upload, Image } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { toAppUser } from "@shared/utils/toAppUser";
 
 const profileSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
   trade: z.string().min(1, "Please select your trade"),
   serviceArea: z.string().min(2, "Service area must be at least 2 characters"),
-  country: z.enum(["Australia", "New Zealand"], { required_error: "Please select your country" }),
+  country: z.string().min(2, "Please select your country"),
   isGstRegistered: z.boolean().default(false),
 });
 
-type ProfileForm = z.infer<typeof profileSchema>;
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const trades = [
   "Plumber", "Electrician", "Carpenter", "Landscaper", "Painter", "Roofer",
@@ -36,18 +37,19 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const { data: user, isLoading } = useQuery({
+  const { data: userData, isLoading } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+  const user = toAppUser(userData);
 
-  const form = useForm<ProfileForm>({
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       businessName: user?.businessName || "",
       trade: user?.trade || "",
       serviceArea: user?.serviceArea || "",
-      country: user?.country || "Australia",
+      country: (user?.country ?? "Australia"),
       isGstRegistered: user?.isGstRegistered || false,
     },
   });
@@ -59,7 +61,7 @@ export default function Profile() {
         businessName: user.businessName || "",
         trade: user.trade || "",
         serviceArea: user.serviceArea || "",
-        country: user.country || "Australia",
+        country: (user.country ?? "Australia"),
         isGstRegistered: user.isGstRegistered || false,
       });
       
@@ -86,7 +88,7 @@ export default function Profile() {
   };
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: ProfileForm) => {
+    mutationFn: async (data: ProfileFormValues) => {
       // First update business details
       const response = await apiRequest("POST", "/api/onboarding", data);
       
@@ -130,7 +132,7 @@ export default function Profile() {
     },
   });
 
-  const onSubmit = (data: ProfileForm) => {
+  const onSubmit = (data: ProfileFormValues) => {
     updateProfileMutation.mutate(data);
   };
 

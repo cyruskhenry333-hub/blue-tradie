@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { AppUser } from "@shared/types/user";
+import { toAppUser } from "@shared/utils/toAppUser";
+import { type JourneyData, toJourneyData } from "@shared/types/journey";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,20 +33,22 @@ export default function WelcomeOnboarding({ onTaskComplete }: WelcomeOnboardingP
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+  const user = toAppUser(userData);
 
   const { data: invoices } = useQuery({
     queryKey: ["/api/invoices"],
     retry: false,
   });
 
-  const { data: journeyData } = useQuery({
+  const { data: journeyDataRaw } = useQuery({
     queryKey: ["/api/journey"],
     retry: false,
   });
+  const journeyData = toJourneyData(journeyDataRaw);
 
   const updateOnboardingMutation = useMutation({
     mutationFn: (taskId: string) => apiRequest("POST", `/api/onboarding/task/${taskId}`),
@@ -97,7 +102,8 @@ export default function WelcomeOnboarding({ onTaskComplete }: WelcomeOnboardingP
       const savedTasks = saved ? JSON.parse(saved) : [];
       
       // Merge auto-completed and saved tasks
-      const allCompletedTasks = [...new Set([...autoCompletedTasks, ...savedTasks])];
+      const mergedTasks = [...autoCompletedTasks, ...savedTasks];
+      const allCompletedTasks = Array.from(new Set(mergedTasks));
       
       setCompletedTasks(allCompletedTasks);
       
@@ -128,7 +134,7 @@ export default function WelcomeOnboarding({ onTaskComplete }: WelcomeOnboardingP
       title: "Create your first invoice",
       description: "Try the invoice builder with region-specific GST",
       icon: <FileText className="h-5 w-5" />,
-      completed: completedTasks.includes("invoice") || (invoices && Array.isArray(invoices) && invoices.length > 0),
+      completed: completedTasks.includes("invoice") || Boolean(invoices && Array.isArray(invoices) && invoices.length > 0),
       action: () => window.location.href = "/invoices"
     },
     {
@@ -169,7 +175,7 @@ export default function WelcomeOnboarding({ onTaskComplete }: WelcomeOnboardingP
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-gray-600">
-              {getRegionalGreeting(user.country)}! Thanks for joining our beta. 
+              {getRegionalGreeting(user.country || "Australia")}! Thanks for joining our beta. 
               Blue Tradie is built specifically for {user.country === "Australia" ? "Aussie" : "Kiwi"} tradies like you.
             </p>
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -198,7 +204,7 @@ export default function WelcomeOnboarding({ onTaskComplete }: WelcomeOnboardingP
                 }} 
                 className="flex-1 btn-tradie-primary"
               >
-                {getRegionalLetsGo(user.country)}!
+                {getRegionalLetsGo(user.country || "Australia")}!
               </Button>
             </div>
           </div>

@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { db } from "../db";
 import pkg from "../../package.json";
-const version = { build: pkg.version };
+import versionJson from "../version.json";
+const VERSION: string = (versionJson as { version?: string }).version ?? "dev";
+const version = { build: pkg.version, commit: VERSION, buildDate: new Date().toISOString() };
 
 export function registerHealthRoutes(app: Express) {
   // Health check endpoint

@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Link } from "wouter";
 import WelcomeOnboarding from "@/components/welcome-onboarding";
-import BetaTipBanner from "@/components/beta-tip-banner";
+// TODO: Beta removed - BetaTipBanner import removed
 import { getRegionalGreeting } from "@/utils/language-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

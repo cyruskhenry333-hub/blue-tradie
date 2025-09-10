@@ -1,5 +1,4 @@
 // Email scheduling service for automated follow-ups
-import { waitlistEmailAutomation } from './waitlist-email-automation';
 
 export class EmailScheduler {
   private intervalId: NodeJS.Timeout | null = null;
@@ -46,13 +45,15 @@ export class EmailScheduler {
       console.log('[EMAIL SCHEDULER] Running scheduled email checks...');
       
       // Send day 7 follow-ups
-      const day7Count = await waitlistEmailAutomation.sendDay7FollowUp();
+      // const day7Count = await waitlistEmailAutomation.sendDay7FollowUp();
+      const day7Count = 0; // Temporarily disabled
       if (day7Count > 0) {
         console.log(`[EMAIL SCHEDULER] Sent ${day7Count} day 7 follow-up emails`);
       }
 
       // Send day 14 video requests
-      const day14Count = await waitlistEmailAutomation.sendDay14VideoRequest();
+      // const day14Count = await waitlistEmailAutomation.sendDay14VideoRequest();
+      const day14Count = 0; // Temporarily disabled
       if (day14Count > 0) {
         console.log(`[EMAIL SCHEDULER] Sent ${day14Count} day 14 video request emails`);
       }

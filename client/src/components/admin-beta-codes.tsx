@@ -179,7 +179,7 @@ export function AdminBetaCodes() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {codes.length === 0 ? (
+          {(codes as any[]).length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No beta codes created yet. Create your first code to start inviting beta testers.
             </div>
@@ -196,7 +196,7 @@ export function AdminBetaCodes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {codes.map((code: any) => (
+                {(codes as any[]).map((code: any) => (
                   <TableRow key={code.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">

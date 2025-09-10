@@ -7,6 +7,7 @@ import { ArrowLeft, HardHat, Palette } from "lucide-react";
 import blueTradieLogo from "@assets/Blue Tradie Logo_1753253697164.png";
 import EnhancedChatUI from "@/components/enhanced-chat-ui";
 import LogoCreationWizard from "@/components/LogoCreationWizard";
+import { toAppUser } from "@shared/utils/toAppUser";
 
 
 const AGENTS = {
@@ -35,10 +36,11 @@ const AGENTS = {
 export default function Chat() {
   const { agentType } = useParams();
   
-  const { data: user } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+  const user = toAppUser(userData);
   
   const selectedAgent = agentType ? AGENTS[agentType as keyof typeof AGENTS] : null;
 

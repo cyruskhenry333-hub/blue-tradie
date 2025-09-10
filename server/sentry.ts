@@ -14,7 +14,7 @@ export function initSentry() {
     environment: process.env.NODE_ENV || 'development',
     release: version.build,
     integrations: [
-      Sentry.httpIntegration({ tracing: true }),
+      Sentry.httpIntegration(),
       Sentry.expressIntegration(),
     ],
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,

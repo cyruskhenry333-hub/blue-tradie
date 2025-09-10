@@ -16,7 +16,7 @@ import { Star } from "lucide-react";
 
 const testimonialSchema = z.object({
   content: z.string().min(10, "Please write at least 10 characters").max(500, "Please keep it under 500 characters"),
-  rating: z.string().transform(Number).pipe(z.number().min(1).max(5)),
+  rating: z.coerce.number().min(1).max(5),
   name: z.string().optional(),
   profilePhoto: z.string().optional(),
 });
@@ -38,7 +38,7 @@ export function TestimonialForm({ isOpen, onClose, trigger = "manual" }: Testimo
     resolver: zodResolver(testimonialSchema),
     defaultValues: {
       content: "",
-      rating: "5",
+      rating: 5,
       name: "",
       profilePhoto: "",
     },
@@ -77,7 +77,7 @@ export function TestimonialForm({ isOpen, onClose, trigger = "manual" }: Testimo
         } ${interactive ? "cursor-pointer hover:text-yellow-400" : ""}`}
         onClick={interactive ? () => {
           setSelectedRating(i + 1);
-          form.setValue("rating", String(i + 1));
+          form.setValue("rating", i + 1);
         } : undefined}
       />
     ));

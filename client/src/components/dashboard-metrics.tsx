@@ -12,6 +12,7 @@ interface DashboardMetricsProps {
       totalExpenses: number;
       jobsCompleted: number;
       outstandingAmount: number;
+      jobsThisMonth?: number;
     };
   };
 }

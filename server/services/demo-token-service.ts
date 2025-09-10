@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { demoTokens, organizations, organizationUsers } from '../../shared/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, lt, isNull } from 'drizzle-orm';
 import crypto from 'crypto';
 
 export class DemoTokenService {
@@ -143,8 +143,8 @@ export class DemoTokenService {
     const result = await db
       .delete(demoTokens)
       .where(and(
-        eq(demoTokens.usedAt, null),
-        gt(new Date(), demoTokens.expiresAt)
+        isNull(demoTokens.usedAt),
+        lt(demoTokens.expiresAt, new Date())
       ));
     
     return result.rowCount || 0;

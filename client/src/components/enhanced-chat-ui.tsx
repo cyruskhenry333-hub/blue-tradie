@@ -28,6 +28,9 @@ interface ChatResponse {
   message: string;
   suggestions?: string[];
   quickActions?: string[];
+  tokens_used?: number;
+  cost_aud?: number;
+  source?: string;
 }
 
 const agents = [
@@ -92,7 +95,7 @@ export default function EnhancedChatUI({ agentType = "coach", onAgentChange }: E
 
   useEffect(() => {
     if (chatHistory) {
-      setMessages(chatHistory);
+      setMessages(Array.isArray(chatHistory) ? chatHistory : []);
     }
   }, [chatHistory, currentAgent]);
 
@@ -137,7 +140,7 @@ export default function EnhancedChatUI({ agentType = "coach", onAgentChange }: E
         setLastActionFeedback({
           tokensUsed: response.tokens_used,
           costAud: response.cost_aud,
-          source: response.source || 'openai',
+          source: (response.source === 'cached' || response.source === 'openai') ? response.source : 'openai',
           agentType: currentAgent,
           show: true
         });

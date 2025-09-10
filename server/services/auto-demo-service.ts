@@ -64,19 +64,17 @@ export class AutoDemoService {
       }
 
       // Create demo user with standard settings
-      const demoUser = await demoService.createDemo(
-        userId,
-        user.email || "",
-        user.firstName || "",
-        user.lastName || "",
-        "", // businessName - will be filled in onboarding
-        "", // trade - will be filled in onboarding
-        "", // serviceArea - will be filled in onboarding
-        "Australia", // default country
-        14, // Standard 14-day trial
-        1000, // Standard token limit
-        true // Enable UGC incentives
-      );
+      const demoUser = await demoService.createDemoUser({
+        email: user.email || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        businessName: "", // will be filled in onboarding
+        trade: "", // will be filled in onboarding
+        serviceArea: "", // will be filled in onboarding
+        country: "Australia", // default country
+        durationDays: 14, // Standard 14-day trial
+        tokenLimit: 1000, // Standard token limit
+      });
 
       // Remove demo offer after activation
       await this.removeDemoOffer(userId);
@@ -159,13 +157,12 @@ export class AutoDemoService {
     
     try {
       // Import email service dynamically to avoid circular imports
-      const { sendEmail } = await import("../services/email-service");
-      await sendEmail({
+      const { emailService } = await import("../services/sendgrid-email-service");
+      await emailService.sendEmail({
         to: user.email,
         from: process.env.FROM_EMAIL || "noreply@bluetradie.com",
         subject: "🚀 Your Blue Tradie Demo is Ready!",
         html: emailContent,
-        text: emailContent.replace(/<[^>]*>/g, '') // Strip HTML for text version
       });
     } catch (error) {
       console.error("Failed to send demo welcome email:", error);

@@ -70,9 +70,9 @@ router.get('/verify-demo/:token', async (req, res) => {
     const isProduction = environment === 'production';
     
     // Set demo user session with organization context
-    req.session.testUser = verification.user;
-    req.session.isTestAuthenticated = true;
-    req.session.currentOrgId = verification.organizationId;
+    (req.session as any).testUser = verification.user;
+    (req.session as any).isTestAuthenticated = true;
+    (req.session as any).currentOrgId = verification.organizationId;
     
     // Set secure cookie options based on environment
     req.session.cookie.secure = isProduction;

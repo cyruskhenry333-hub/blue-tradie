@@ -89,7 +89,7 @@ class UsageMonitor {
   }
 
   // Get current usage stats
-  getStats(): UsageStats & { limits: typeof this.dailyLimits; percentages: Record<string, number> } {
+  getStats() {
     return {
       ...this.stats,
       limits: this.dailyLimits,

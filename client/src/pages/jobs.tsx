@@ -79,7 +79,7 @@ export default function JobsPage() {
       customerEmail: "",
       address: "",
       description: "",
-      totalAmount: '',
+      totalAmount: 0,
       scheduledDate: new Date().toISOString().split('T')[0], // Today's date as default
     },
   });
@@ -162,7 +162,7 @@ export default function JobsPage() {
       customerEmail: job.customerEmail || "",
       address: job.address || "",
       description: job.description,
-      totalAmount: job.totalAmount.toString(),
+      totalAmount: job.totalAmount,
       scheduledDate: job.scheduledDate.split('T')[0], // Ensure date format
     });
     setShowEditJobDialog(true);

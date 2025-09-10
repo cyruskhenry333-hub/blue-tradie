@@ -52,7 +52,7 @@ router.get('/delivery-status/:email', async (req, res) => {
     console.error('SendGrid debug error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch delivery status',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });

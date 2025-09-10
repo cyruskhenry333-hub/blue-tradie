@@ -89,7 +89,9 @@ export default function ThreeTierBetaSignup() {
     );
   }
 
-  const tiers = config.features.betaTesting.tiers;
+  // TODO: Beta disabled - force betaEnabled = false
+  const betaEnabled = false;
+  const tiers = betaEnabled ? [] : []; // TODO: Beta disabled - no tiers available
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -112,7 +114,7 @@ export default function ThreeTierBetaSignup() {
               <CardContent className="p-4 text-center">
                 <div className="text-yellow-600 font-semibold">🔓 Founding Members</div>
                 <div className="text-2xl font-bold text-yellow-800">
-                  {betaStatus?.tiers.founding.available || 0} / {betaStatus?.tiers.founding.max || 25}
+                  0 / 25 {/* TODO: Beta disabled - founding tier not available */}
                 </div>
                 <div className="text-sm text-yellow-600">spots available</div>
               </CardContent>
@@ -149,7 +151,7 @@ export default function ThreeTierBetaSignup() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <h3 className="font-bold text-lg mb-2">{tiers.founding.name}</h3>
+                <h3 className="font-bold text-lg mb-2">Founding Tradie (Unavailable)</h3>
                 <div className="text-lg font-bold text-yellow-800 mb-1">LIFETIME ACCESS</div>
                 <div className="text-sm text-green-600 mb-4">"Never pay for Phase 1 again. Unlock future tools at 60% off for life."</div>
                 <div className="space-y-2">

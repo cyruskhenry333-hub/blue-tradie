@@ -189,8 +189,9 @@ export default function Settings() {
                         <h4 className="font-medium">Beta Updates</h4>
                         <p className="text-sm text-gray-600">Get notified about new features and improvements</p>
                       </div>
-                      <Badge variant={user.isBetaUser ? "default" : "outline"}>
-                        {user.isBetaUser ? "Beta User" : "Regular User"}
+                      <Badge variant="outline">
+                        {/* TODO: Beta removed - was: user.isBetaUser ? "Beta User" : "Regular User" */}
+                        Regular User
                       </Badge>
                     </div>
                   </div>

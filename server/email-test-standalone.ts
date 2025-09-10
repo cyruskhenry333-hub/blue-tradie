@@ -93,7 +93,17 @@ export function addStandaloneEmailTestRoutes(app: Express) {
       console.log(`📧 Testing welcome email for: ${tier} tier`);
       
       const { emailService } = await import('./services/sendgrid-email-service');
-      const success = await emailService.sendTierWelcomeEmail(testUserData);
+      const success = await emailService.sendEmail({
+        to: testUserData.email,
+        subject: `Welcome to Blue Tradie - ${testUserData.tier} Member!`,
+        html: `
+          <h1>Welcome ${testUserData.firstName}!</h1>
+          <p>Thank you for joining Blue Tradie as a ${testUserData.tier} member.</p>
+          <p><strong>Business:</strong> ${testUserData.businessName}</p>
+          <p><strong>Country:</strong> ${testUserData.country}</p>
+          <p>We're excited to help your business grow!</p>
+        `
+      });
       
       res.json({ 
         success, 

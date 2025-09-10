@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { X, Lightbulb, MessageSquare, FileText, Calculator } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getRegionalEncouragement, getRegionalNoProblem } from "@/utils/language-utils";
+import type { AppUser } from "@shared/types/user";
+import { toAppUser } from "@shared/utils/toAppUser";
 
 interface BetaTip {
   id: string;
@@ -20,10 +22,11 @@ export default function BetaTipBanner() {
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
 
-  const { data: user } = useQuery({
+  const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+  const user = toAppUser(userData);
 
   const tips: BetaTip[] = [
     {
@@ -40,7 +43,7 @@ export default function BetaTipBanner() {
       id: "ai-invoices",
       icon: <FileText className="h-5 w-5" />,
       title: "Speed up invoicing",
-      description: `${getRegionalEncouragement(user?.country)} — use AI to auto-fill invoice details from your job description`,
+      description: `${getRegionalEncouragement(user?.country ?? "Australia")} — use AI to auto-fill invoice details from your job description`,
       action: {
         text: "Try AI Invoice",
         href: "/invoices"
@@ -50,7 +53,7 @@ export default function BetaTipBanner() {
       id: "legal-contracts",
       icon: <MessageSquare className="h-5 w-5" />,
       title: "Need contract help?",
-      description: `${getRegionalNoProblem(user?.country)} — Legal agent has ${user?.country} templates ready to download`,
+      description: `${getRegionalNoProblem(user?.country ?? "Australia")} — Legal agent has ${user?.country ?? "Australia"} templates ready to download`,
       action: {
         text: "Get Contract Template",
         href: "/chat/legal"

@@ -53,7 +53,7 @@ export function setupSimpleAuth(app: Express) {
       let existingOnboardedStatus = false;
       try {
         const existingUser = await storage.getUser(userId);
-        existingOnboardedStatus = existingUser.isOnboarded || false;
+        existingOnboardedStatus = existingUser?.isOnboarded || false;
         console.log(`[DEMO LOGIN] Found existing user ${userId} with isOnboarded=${existingOnboardedStatus}`);
       } catch (error) {
         console.log(`[DEMO LOGIN] No existing user found for ${userId}, creating new`);
