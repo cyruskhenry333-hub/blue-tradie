@@ -827,6 +827,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Signup route for free month trial
+  app.post('/api/signup', async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName,
+        email,
+        businessName,
+        trade,
+        serviceArea,
+        country,
+        isGstRegistered
+      } = req.body;
+
+      // Basic validation
+      if (!firstName || !lastName || !email || !businessName || !trade || !serviceArea || !country) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+
+      // Create user ID based on email
+      const userId = `user-${email.replace(/[@.]/g, '-')}`;
+
+      // Create new user with free month trial
+      const user = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        businessName,
+        trade,
+        serviceArea,
+        country,
+        isGstRegistered: isGstRegistered || false,
+        isOnboarded: true, // Skip onboarding for signup users
+        isFreeTrialUser: true, // Mark as free trial
+        freeTrialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        metadata: { signupDate: new Date().toISOString() },
+        profileImageUrl: null
+      });
+
+      // Set session for immediate login
+      req.session.user = user;
+      req.session.isAuthenticated = true;
+
+      // Send welcome email (optional - can implement later)
+      try {
+        const { emailService } = await import("./services/sendgrid-email-service");
+        await emailService.sendEmail({
+          to: email,
+          subject: "Welcome to Blue Tradie - Your Free Month Starts Now! 🎉",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${firstName}!</h2>
+              <p>Thanks for signing up! Your free month trial has started.</p>
+              <div style="background: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                <h3 style="margin: 0; color: #1e40af;">What's Next?</h3>
+                <ul style="margin: 10px 0;">
+                  <li>✅ Chat with your 6 AI Business Advisors</li>
+                  <li>✅ Create professional invoices with GST</li>
+                  <li>✅ Connect with other tradies in the directory</li>
+                  <li>✅ Set up smart business automation</li>
+                </ul>
+              </div>
+              <p><a href="${process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com'}/dashboard" 
+                    style="background: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Get Started Now
+              </a></p>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                Your free month ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
+                Cancel anytime - no strings attached!
+              </p>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+        // Don't fail signup if email fails
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          businessName: user.businessName,
+          isFreeTrialUser: true,
+          freeTrialEndsAt: user.freeTrialEndsAt
+        },
+        message: "Account created successfully! Welcome to Blue Tradie!"
+      });
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ 
+        message: "Failed to create account. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
   // Dashboard routes
   app.get('/api/dashboard', isSimpleAuthenticated, async (req: any, res) => {
     try {

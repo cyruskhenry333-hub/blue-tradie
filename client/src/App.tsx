@@ -49,6 +49,7 @@ import TestEmailButton from "@/pages/test-email-button";
 import AIAdvisors from "@/pages/ai-advisors";
 import TradieDirectory from "@/pages/tradie-directory";
 import Automation from "@/pages/automation";
+import Signup from "@/pages/signup";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
 
@@ -103,6 +104,7 @@ function Router() {
             <Route path="/early-access" component={() => { window.location.href = '/demo'; return null; }} />
 
             <Route path="/" component={Landing} />
+            <Route path="/signup" component={Signup} />
             <Route path="/demo-request" component={DemoRequestPage} />
           </>
         ) : (
