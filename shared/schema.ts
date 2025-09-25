@@ -92,6 +92,10 @@ export const users = pgTable("users", {
   demoTokenLimit: integer("demo_token_limit").default(1000), // Default 1000 tokens for demo
   demoStatus: varchar("demo_status").default("active"), // active, expired, suspended
   
+  // Free trial system for production users
+  isFreeTrialUser: boolean("is_free_trial_user").default(false),
+  freeTrialEndsAt: timestamp("free_trial_ends_at"),
+  
   // UGC (User Generated Content) incentives for demo users
   ugcContributions: jsonb("ugc_contributions"), // Track testimonials, case studies, social posts
   ugcBonusTokens: integer("ugc_bonus_tokens").default(0), // Extra tokens earned through UGC

@@ -827,18 +827,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Signup route for free month trial
-  app.post('/api/signup', async (req, res) => {
+  // New Stripe checkout route for free month trial with payment capture
+  app.post('/api/checkout/start-trial', async (req, res) => {
     try {
       const {
         firstName,
-        lastName,
+        lastName, 
         email,
         businessName,
         trade,
         serviceArea,
         country,
-        isGstRegistered
+        isGstRegistered,
+        plan = 'pro' // Default to pro plan
       } = req.body;
 
       // Basic validation
@@ -846,91 +847,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "All fields are required" });
       }
 
+      // Validate plan
+      if (!['pro', 'teams'].includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
       // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
+      const userId = `user-${email.replace(/[@.]/g, '-')}`;
+      const existingUser = await storage.getUser(userId);
       if (existingUser) {
         return res.status(400).json({ message: "An account with this email already exists" });
       }
 
-      // Create user ID based on email
-      const userId = `user-${email.replace(/[@.]/g, '-')}`;
-
-      // Create new user with free month trial
-      const user = await storage.upsertUser({
-        id: userId,
-        email,
+      // Store user data temporarily in session for after Stripe checkout
+      req.session.pendingUser = {
+        userId,
         firstName,
         lastName,
+        email,
         businessName,
         trade,
         serviceArea,
         country,
         isGstRegistered: isGstRegistered || false,
-        isOnboarded: true, // Skip onboarding for signup users
-        isFreeTrialUser: true, // Mark as free trial
-        freeTrialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        metadata: { signupDate: new Date().toISOString() },
-        profileImageUrl: null
-      });
+        plan
+      };
 
-      // Set session for immediate login
-      req.session.user = user;
-      req.session.isAuthenticated = true;
-
-      // Send welcome email (optional - can implement later)
-      try {
-        const { emailService } = await import("./services/sendgrid-email-service");
-        await emailService.sendEmail({
-          to: email,
-          subject: "Welcome to Blue Tradie - Your Free Month Starts Now! 🎉",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${firstName}!</h2>
-              <p>Thanks for signing up! Your free month trial has started.</p>
-              <div style="background: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                <h3 style="margin: 0; color: #1e40af;">What's Next?</h3>
-                <ul style="margin: 10px 0;">
-                  <li>✅ Chat with your 6 AI Business Advisors</li>
-                  <li>✅ Create professional invoices with GST</li>
-                  <li>✅ Connect with other tradies in the directory</li>
-                  <li>✅ Set up smart business automation</li>
-                </ul>
-              </div>
-              <p><a href="${process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com'}/dashboard" 
-                    style="background: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Get Started Now
-              </a></p>
-              <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                Your free month ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
-                Cancel anytime - no strings attached!
-              </p>
-            </div>
-          `
-        });
-      } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
-        // Don't fail signup if email fails
+      // Get price ID from environment
+      const priceId = plan === 'pro' 
+        ? process.env.STRIPE_PRICE_PRO_MONTH 
+        : process.env.STRIPE_PRICE_TEAMS_MONTH;
+      
+      if (!priceId) {
+        return res.status(500).json({ message: "Pricing not configured. Please contact support." });
       }
 
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          businessName: user.businessName,
-          isFreeTrialUser: true,
-          freeTrialEndsAt: user.freeTrialEndsAt
+      // Create Stripe checkout session with 30-day trial
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-07-30.basil',
+      });
+
+      const APP_URL = process.env.APP_BASE_URL || 'http://localhost:5000';
+      
+      const session = await stripeClient.checkout.sessions.create({
+        mode: 'subscription',
+        customer_email: email,
+        subscription_data: {
+          trial_period_days: 30,
+          metadata: {
+            userId,
+            plan,
+            businessName,
+            trade,
+            country
+          }
         },
-        message: "Account created successfully! Welcome to Blue Tradie!"
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${APP_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${APP_URL}/signup?plan=${plan}`,
+        metadata: {
+          userId,
+          plan,
+          firstName,
+          lastName,
+          businessName,
+          trade,
+          serviceArea,
+          country,
+          isGstRegistered: String(isGstRegistered || false)
+        }
+      });
+
+      res.json({ 
+        sessionUrl: session.url,
+        sessionId: session.id 
       });
 
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Stripe checkout creation error:", error);
       res.status(500).json({ 
-        message: "Failed to create account. Please try again.",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        message: "Failed to create checkout session. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  });
+
+  // Stripe webhook handler for checkout completion
+  app.post('/api/webhook/stripe', (await import('express')).raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!endpointSecret) {
+      console.error('Stripe webhook secret not configured');
+      return res.status(400).send('Webhook secret not configured');
+    }
+
+    try {
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-07-30.basil',
+      });
+
+      const event = stripeClient.webhooks.constructEvent(req.body, sig, endpointSecret);
+      
+      console.log(`[STRIPE WEBHOOK] Received event: ${event.type}`);
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as any;
+        const metadata = session.metadata;
+        
+        if (!metadata || !metadata.userId) {
+          console.error('No metadata found in Stripe session');
+          return res.status(400).send('Invalid session metadata');
+        }
+
+        // Create user account after successful Stripe checkout
+        const user = await storage.upsertUser({
+          id: metadata.userId,
+          email: session.customer_email || metadata.email,
+          firstName: metadata.firstName,
+          lastName: metadata.lastName,
+          businessName: metadata.businessName,
+          trade: metadata.trade,
+          serviceArea: metadata.serviceArea,
+          country: metadata.country,
+          isGstRegistered: metadata.isGstRegistered === 'true',
+          isOnboarded: true,
+          isFreeTrialUser: true,
+          freeTrialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          stripeCustomerId: session.customer,
+          subscriptionTier: metadata.plan === 'teams' ? 'Blue Teams' : 'Blue Core',
+          metadata: { 
+            signupDate: new Date().toISOString(),
+            stripeSessionId: session.id,
+            plan: metadata.plan
+          }
+        });
+
+        // Send welcome email
+        try {
+          const { emailService } = await import("./services/sendgrid-email-service");
+          await emailService.sendEmail({
+            to: session.customer_email,
+            subject: "Welcome to Blue Tradie - Your Free Month Starts Now! 🎉",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${metadata.firstName}!</h2>
+                <p>Your ${metadata.plan === 'teams' ? 'Teams' : 'Pro'} plan trial has started! You have 30 days of full access.</p>
+                <div style="background: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                  <h3 style="margin: 0; color: #1e40af;">What's Next?</h3>
+                  <ul style="margin: 10px 0;">
+                    <li>✅ Chat with your 6 AI Business Advisors</li>
+                    <li>✅ Create professional invoices with GST</li>
+                    <li>✅ Connect with other tradies in the directory</li>
+                    <li>✅ Set up smart business automation</li>
+                  </ul>
+                </div>
+                <p><a href="${process.env.APP_BASE_URL || 'http://localhost:5000'}/dashboard" 
+                      style="background: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Get Started Now
+                </a></p>
+                <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                  Your free month ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
+                  You'll receive 3 reminder emails before billing starts. Cancel anytime!
+                </p>
+              </div>
+            `
+          });
+        } catch (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+        }
+
+        console.log(`[STRIPE WEBHOOK] User created successfully: ${metadata.userId}`);
+      }
+
+      if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
+        const subscription = event.data.object as any;
+        const customerId = subscription.customer;
+        
+        // Find user by Stripe customer ID and update subscription info
+        // Note: Since getAllUsers doesn't exist, we'll skip this for now
+        // This webhook event is less critical than checkout.session.completed
+        console.log(`[STRIPE WEBHOOK] Subscription ${subscription.id} updated for customer ${customerId}`);
+      }
+
+      res.json({ received: true });
+
+    } catch (err) {
+      console.error('Stripe webhook error:', err);
+      res.status(400).send(`Webhook Error: ${(err as Error).message}`);
+    }
+  });
+
+  // Billing portal route
+  app.get('/api/billing/portal', async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      if (!user || !user.stripeCustomerId) {
+        return res.status(400).json({ message: "No billing account found" });
+      }
+
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-07-30.basil',
+      });
+
+      const session = await stripeClient.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${process.env.APP_BASE_URL || 'http://localhost:5000'}/dashboard`,
+      });
+
+      res.json({ url: session.url });
+
+    } catch (error) {
+      console.error("Billing portal error:", error);
+      res.status(500).json({ 
+        message: "Failed to create billing portal session. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  });
+
+  // Trial reminder system routes
+  app.post('/api/admin/send-trial-reminders', async (req, res) => {
+    try {
+      const { dryRun = false } = req.body;
+      
+      const { trialReminderService } = await import('./services/trial-reminder-service');
+      const results = await trialReminderService.sendDailyReminders(dryRun);
+      
+      res.json({
+        success: true,
+        results,
+        message: dryRun ? 'Dry run completed' : 'Reminders sent successfully'
+      });
+
+    } catch (error) {
+      console.error("Trial reminder error:", error);
+      res.status(500).json({ 
+        message: "Failed to process trial reminders",
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  });
+
+  // Check trial status for current user
+  app.get('/api/trial-status', async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (!user.isFreeTrialUser || !user.freeTrialEndsAt) {
+        return res.json({
+          isTrialUser: false,
+          message: "Not on free trial"
+        });
+      }
+
+      const trialEndDate = new Date(user.freeTrialEndsAt);
+      const now = new Date();
+      const daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const hasExpired = daysRemaining <= 0;
+
+      res.json({
+        isTrialUser: true,
+        trialEndsAt: user.freeTrialEndsAt,
+        daysRemaining: Math.max(0, daysRemaining),
+        hasExpired,
+        plan: user.subscriptionTier || 'Blue Core',
+        billingAmount: user.subscriptionTier?.includes('Teams') ? '$149' : '$59'
+      });
+
+    } catch (error) {
+      console.error("Trial status error:", error);
+      res.status(500).json({ 
+        message: "Failed to get trial status",
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
       });
     }
   });

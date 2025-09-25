@@ -8,8 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { HardHat, ArrowLeft, CheckCircle, User, Building, MapPin, Flag } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { HardHat, ArrowLeft, CheckCircle, User, Building, MapPin, Flag, CreditCard } from "lucide-react";
+import { Link, useLocation, useSearch } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import blueTradieLogo from "@assets/Blue Tradie Logo_1753253697164.png";
@@ -37,6 +37,11 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  
+  // Get plan from URL parameter (pro or teams)
+  const urlParams = new URLSearchParams(search);
+  const selectedPlan = urlParams.get('plan') || 'pro';
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
@@ -56,28 +61,33 @@ export default function Signup() {
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/signup", data);
+      const response = await apiRequest("POST", "/api/checkout/start-trial", {
+        ...data,
+        plan: selectedPlan
+      });
       
       if (response.ok) {
+        const { sessionUrl } = await response.json();
+        
         toast({
-          title: "Welcome to Blue Tradie! 🎉",
-          description: "Your free month trial has started. Let's get your business sorted!",
+          title: "Redirecting to Secure Checkout",
+          description: "We'll redirect you to enter your payment details for your free trial.",
         });
         
-        // Redirect to onboarding or dashboard
-        setLocation("/dashboard");
+        // Redirect to Stripe Checkout
+        window.location.href = sessionUrl;
       } else {
         const errorData = await response.json();
         toast({
-          title: "Signup Failed",
+          title: "Checkout Failed",
           description: errorData.message || "Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Checkout error:", error);
       toast({
-        title: "Signup Failed",
+        title: "Checkout Failed",
         description: "Please check your connection and try again.",
         variant: "destructive",
       });
@@ -120,10 +130,12 @@ export default function Signup() {
           <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 mb-8 text-center border border-green-200">
             <div className="flex items-center justify-center gap-2 mb-2">
               <CheckCircle className="h-6 w-6 text-green-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Start Your Free Month</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Start Your {selectedPlan === 'teams' ? 'Teams' : 'Pro'} Free Month
+              </h2>
             </div>
             <p className="text-gray-700 mb-4">
-              Full access to all features for 30 days. No payment required. Cancel anytime.
+              Full access to all features for 30 days. Card required but no charge until day 31. Cancel anytime.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center justify-center gap-1">
@@ -354,19 +366,25 @@ export default function Signup() {
                     {isLoading ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Creating Your Account...
+                        Redirecting to Checkout...
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5 mr-2" />
+                        <CreditCard className="w-5 h-5 mr-2" />
                         Start My Free Month
                       </>
                     )}
                   </Button>
 
+                  {/* Legal Notice */}
+                  <div className="text-center text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+                    <p className="font-semibold mb-2">30-day free trial. Card charged on day 31 unless canceled.</p>
+                    <p>Up to 3 reminder emails/SMS. Reply STOP to opt out.</p>
+                  </div>
+
                   {/* Additional Info */}
                   <div className="text-center text-sm text-gray-500 space-y-2">
-                    <p>✅ No credit card required</p>
+                    <p>✅ Secure checkout powered by Stripe</p>
                     <p>✅ Cancel anytime during your free month</p>
                     <p>✅ Full access to all features</p>
                   </div>
