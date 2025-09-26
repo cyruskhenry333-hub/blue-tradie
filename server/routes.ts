@@ -4198,6 +4198,42 @@ Design should be simple, memorable, and work well in both color and black & whit
     });
   });
 
+  // One-time database migration endpoint
+  app.post('/api/admin/migrate', async (req, res) => {
+    try {
+      console.log('[MIGRATION] Running database schema migration...');
+      
+      // Import and run the drizzle push command
+      const { exec } = await import('child_process');
+      
+      exec('npm run db:push', (error, stdout, stderr) => {
+        if (error) {
+          console.error('[MIGRATION] Error:', error);
+          return res.status(500).json({
+            success: false,
+            message: 'Migration failed',
+            error: error.message
+          });
+        }
+        
+        console.log('[MIGRATION] Success:', stdout);
+        res.json({
+          success: true,
+          message: 'Database migration completed successfully!',
+          output: stdout
+        });
+      });
+      
+    } catch (error) {
+      console.error('[MIGRATION] Exception:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Migration failed',
+        error: (error as Error).message
+      });
+    }
+  });
+
   // Register health check routes
   registerHealthRoutes(app);
   

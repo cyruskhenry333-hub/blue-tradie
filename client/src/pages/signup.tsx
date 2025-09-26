@@ -131,7 +131,7 @@ export default function Signup() {
             <div className="flex items-center justify-center gap-2 mb-2">
               <CheckCircle className="h-6 w-6 text-green-600" />
               <h2 className="text-2xl font-bold text-gray-900">
-                Start Your {selectedPlan === 'teams' ? 'Teams' : 'Pro'} Free Month
+                Start Your {selectedPlan === 'teams' ? 'Teams' : 'Pro'} Free Trial
               </h2>
             </div>
             <p className="text-gray-700 mb-4">
@@ -371,7 +371,7 @@ export default function Signup() {
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5 mr-2" />
-                        Start My Free Month
+                        Start My Free Trial
                       </>
                     )}
                   </Button>
