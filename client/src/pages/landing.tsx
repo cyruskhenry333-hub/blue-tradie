@@ -26,7 +26,7 @@ export default function Landing() {
   });
 
   const handleStartFreeTrial = () => {
-    analytics.trackCTAClick("Start Free Month", "hero_section");
+    analytics.trackCTAClick("Start Free Trial", "hero_section");
     setLocation("/signup");
   };
 
@@ -47,7 +47,7 @@ export default function Landing() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4" />
               <span className="font-medium">
-                Start Your Free Month Today
+                Start Your Free Trial Today
               </span>
             </div>
             <Button 
@@ -77,11 +77,10 @@ export default function Landing() {
             
             <div className="hidden md:flex items-center space-x-6">
               <a href="#features" className="text-gray-600 hover:text-tradie-blue transition-colors">Features</a>
-              <a href="/roadmap" className="text-gray-600 hover:text-tradie-blue transition-colors">Roadmap</a>
               <button onClick={handleViewPricing} className="text-gray-600 hover:text-tradie-blue transition-colors">Pricing</button>
               <Button variant="ghost" onClick={handleLogin}>Login</Button>
               <Button onClick={handleStartFreeTrial} className="btn-tradie-primary">
-                Start Free Month
+                Start Free Trial
               </Button>
             </div>
             
@@ -134,7 +133,7 @@ export default function Landing() {
                 className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white text-lg px-8 py-4 shadow-lg"
                 size="lg"
               >
-                Start Free Month
+                Start Free Trial
               </Button>
               
               <Button 
@@ -201,7 +200,7 @@ export default function Landing() {
               size="lg"
               className="bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-4"
             >
-              Start Your Free Month Now
+              Start Your Free Trial Now
             </Button>
           </div>
         </div>
@@ -327,7 +326,7 @@ export default function Landing() {
       <TestimonialsSection />
 
       {/* Final CTA */}
-      <section className="py-16 bg-gradient-to-r from-tradie-blue to-green-600 text-white">
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-green-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Sort Your Business?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">Join hundreds of tradies who've streamlined their business with Blue Tradie</p>
@@ -338,7 +337,7 @@ export default function Landing() {
               size="lg"
               className="bg-white text-tradie-blue hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
             >
-              Start Your Free Month
+              Start Your Free Trial
             </Button>
             
             <Button 
@@ -359,77 +358,63 @@ export default function Landing() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">Choose Your Plan</DialogTitle>
           </DialogHeader>
-          <div className="grid md:grid-cols-3 gap-6 mt-6">
-            {/* Free Month */}
-            <Card className="border-2 border-green-500 relative">
+          <div className="grid md:grid-cols-2 gap-6 mt-6 max-w-4xl mx-auto">
+            {/* Pro Plan */}
+            <Card className="border-2 border-blue-500 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                  Start Here
+                <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Most Popular
                 </span>
               </div>
               <CardHeader className="text-center pt-8">
-                <CardTitle className="text-xl">Free Month</CardTitle>
-                <div className="text-3xl font-bold">$0</div>
-                <div className="text-gray-500">First month free</div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />All features included</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />6 AI Business Advisors</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />Unlimited invoices & quotes</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />Tradie Directory access</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />Smart automation</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-green-500 mr-2" />No credit card required</li>
-                </ul>
-                <Button onClick={handleStartFreeTrial} className="w-full mt-6 bg-green-600 hover:bg-green-700">
-                  Start Free Month
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Pro Plan */}
-            <Card className="border-2 border-blue-500">
-              <CardHeader className="text-center">
                 <CardTitle className="text-xl">Pro Plan</CardTitle>
                 <div className="text-3xl font-bold">$59</div>
-                <div className="text-gray-500">per month</div>
+                <div className="text-gray-500">per month • Perfect for sole traders</div>
+                <div className="text-sm text-green-600 font-semibold mt-2">30-day free trial included</div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
-                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Everything in Free</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Priority support</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />6 AI Business Advisors</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Smart invoicing with automation</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Job & client management</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Expense tracking</li>
                   <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Advanced reporting</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Team collaboration</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Custom branding</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />API access</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Priority support</li>
                 </ul>
-                <Button variant="outline" className="w-full mt-6">
-                  Choose Pro Plan
+                <Button onClick={handleStartFreeTrial} className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
+                  Start Free Trial
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Business Plan */}
+            {/* Teams Plan */}
             <Card className="border-2 border-purple-500">
               <CardHeader className="text-center">
-                <CardTitle className="text-xl">Business Plan</CardTitle>
+                <CardTitle className="text-xl">Teams Plan</CardTitle>
                 <div className="text-3xl font-bold">$149</div>
-                <div className="text-gray-500">per month</div>
+                <div className="text-gray-500">per month • For growing businesses</div>
+                <div className="text-sm text-green-600 font-semibold mt-2">30-day free trial included</div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Everything in Pro</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Multi-location support</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Advanced automation</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Custom integrations</li>
-                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Dedicated account manager</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Team collaboration tools</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Multi-user access</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />Advanced analytics dashboard</li>
                   <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />White-label options</li>
+                  <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />API access</li>
                 </ul>
-                <Button variant="outline" className="w-full mt-6">
-                  Choose Business Plan
+                <Button variant="outline" className="w-full mt-6 border-purple-500 text-purple-600 hover:bg-purple-50">
+                  Start Free Trial
                 </Button>
               </CardContent>
             </Card>
+          </div>
+          
+          <div className="text-center mt-6 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              ✅ 30 days completely free • ✅ No card required to start • ✅ Cancel anytime
+            </p>
           </div>
         </DialogContent>
       </Dialog>

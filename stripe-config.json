@@ -1,0 +1,22 @@
+{
+  "created": "2025-09-25T11:50:24.114Z",
+  "environment": "LIVE",
+  "products": {
+    "pro": {
+      "product_id": "prod_T7ScCNwn04ERzo",
+      "price_id": "price_1SBDgoBNVpg7WCq0mAstv9mF",
+      "amount": "$59 AUD/month",
+      "description": "Professional plan for individual tradies with AI advisors, invoicing, and automation"
+    },
+    "teams": {
+      "product_id": "prod_T7ScVaa4QGLt0G",
+      "price_id": "price_1SBDgpBNVpg7WCq0ivdj2fkc",
+      "amount": "$149 AUD/month",
+      "description": "Advanced plan for tradie teams with enhanced collaboration and management features"
+    }
+  },
+  "environment_variables": {
+    "STRIPE_PRICE_PRO_MONTH": "price_1SBDgoBNVpg7WCq0mAstv9mF",
+    "STRIPE_PRICE_TEAMS_MONTH": "price_1SBDgpBNVpg7WCq0ivdj2fkc"
+  }
+}
