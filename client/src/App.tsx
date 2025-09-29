@@ -51,6 +51,8 @@ import TradieDirectory from "@/pages/tradie-directory";
 import Automation from "@/pages/automation";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
+import Terms from "@/pages/terms";
+import Privacy from "@/pages/privacy";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
 
@@ -107,6 +109,8 @@ function Router() {
             <Route path="/" component={Landing} />
             <Route path="/signup" component={Signup} />
             <Route path="/welcome" component={Welcome} />
+            <Route path="/terms" component={Terms} />
+            <Route path="/privacy" component={Privacy} />
             <Route path="/demo-request" component={DemoRequestPage} />
           </>
         ) : (

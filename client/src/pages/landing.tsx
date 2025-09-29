@@ -166,8 +166,8 @@ export default function Landing() {
                   <User className="h-8 w-8 text-green-600" />
                 </div>
                 <CardTitle className="text-xl font-semibold mb-3">1. Sign Up Free</CardTitle>
-                <p className="text-gray-600 mb-4">Create your account in under 60 seconds. No credit card required for your free month.</p>
-                <div className="text-sm text-green-600 font-medium">100% Free • No Payment Info</div>
+                <p className="text-gray-600 mb-4">Create your account in under 60 seconds. Start your 30-day free trial instantly.</p>
+                <div className="text-sm text-green-600 font-medium">30-Day Free Trial • No Payment Info</div>
               </CardHeader>
             </Card>
             
@@ -418,6 +418,53 @@ export default function Landing() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Footer */}
+      <footer className="bg-gradient-to-r from-blue-900 to-green-800 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="col-span-2">
+              <div className="flex items-center space-x-2 mb-4">
+                <HardHat className="h-8 w-8" />
+                <span className="text-2xl font-bold">Blue Tradie</span>
+              </div>
+              <p className="text-blue-100 mb-4">
+                The complete business platform built specifically for Australian and New Zealand tradies. 
+                Manage jobs, invoices, and grow your business with AI-powered tools.
+              </p>
+              <div className="text-sm text-blue-200">
+                🇦🇺 Made for Australian & New Zealand Tradies 🇳🇿
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-4">Features</h4>
+              <ul className="space-y-2 text-sm text-blue-100">
+                <li>AI Business Advisors</li>
+                <li>Smart Invoicing</li>
+                <li>Job Management</li>
+                <li>Tradie Directory</li>
+                <li>Expense Tracking</li>
+                <li>Business Analytics</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-sm text-blue-100">
+                <li><a href="/terms" className="hover:text-white">Terms of Service</a></li>
+                <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
+                <li><a href="mailto:support@bluetradie.com" className="hover:text-white">Contact Support</a></li>
+                <li><a href="/help" className="hover:text-white">Help Center</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-blue-700 mt-8 pt-8 text-center text-sm text-blue-200">
+            <p>&copy; 2024 Blue Tradie. All rights reserved. Built with ❤️ for tradies across Australia and New Zealand.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
