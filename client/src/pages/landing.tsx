@@ -461,7 +461,7 @@ export default function Landing() {
           </div>
           
           <div className="border-t border-blue-700 mt-8 pt-8 text-center text-sm text-blue-200">
-            <p>&copy; 2024 Blue Tradie. All rights reserved. Built with ❤️ for tradies across Australia and New Zealand.</p>
+            <p>&copy; 2025 Blue Tradie. All rights reserved. Built for tradies across Australia and New Zealand.</p>
           </div>
         </div>
       </footer>

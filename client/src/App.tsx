@@ -53,6 +53,8 @@ import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
+import Contact from "@/pages/contact";
+import Help from "@/pages/help";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
 
@@ -111,6 +113,8 @@ function Router() {
             <Route path="/welcome" component={Welcome} />
             <Route path="/terms" component={Terms} />
             <Route path="/privacy" component={Privacy} />
+            <Route path="/contact" component={Contact} />
+            <Route path="/help" component={Help} />
             <Route path="/demo-request" component={DemoRequestPage} />
           </>
         ) : (
