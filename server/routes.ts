@@ -873,10 +873,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         plan
       };
 
-      // Get price ID from environment
+      // Get price ID from environment (with fallback for testing)
       const priceId = plan === 'pro' 
-        ? process.env.STRIPE_PRICE_PRO_MONTH 
-        : process.env.STRIPE_PRICE_TEAMS_MONTH;
+        ? (process.env.STRIPE_PRICE_PRO_MONTH || 'price_1SBDgoBNVpg7WCq0mAstv9mF')
+        : (process.env.STRIPE_PRICE_TEAMS_MONTH || 'price_1SBDgpBNVpg7WCq0ivdj2fkc');
       
       if (!priceId) {
         return res.status(500).json({ message: "Pricing not configured. Please contact support." });
