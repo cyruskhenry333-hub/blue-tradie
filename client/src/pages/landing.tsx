@@ -156,7 +156,7 @@ export default function Landing() {
             <h2 className="text-4xl font-bold text-black mb-4">
               Get Started in 3 Simple Steps
             </h2>
-            <p className="text-xl text-gray-600">30-day free trial. Card required but no charge until day 31.</p>
+            <p className="text-xl text-gray-600">30-day free trial. Cancel anytime before billing starts.</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -413,7 +413,7 @@ export default function Landing() {
           
           <div className="text-center mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600">
-              ✅ 30 days completely free • ✅ Card required but no charge until day 31 • ✅ Cancel anytime
+              ✅ 30 days completely free • ✅ No charge until day 31 • ✅ Cancel anytime
             </p>
           </div>
         </DialogContent>
