@@ -167,7 +167,7 @@ export default function Landing() {
                 </div>
                 <CardTitle className="text-xl font-semibold mb-3">1. Sign Up Free</CardTitle>
                 <p className="text-gray-600 mb-4">Create your account in under 60 seconds. Start your 30-day free trial instantly.</p>
-                <div className="text-sm text-green-600 font-medium">30-Day Free Trial • Card Required</div>
+                <div className="text-sm text-green-600 font-medium">30-Day Free Trial • Cancel anytime</div>
               </CardHeader>
             </Card>
             
