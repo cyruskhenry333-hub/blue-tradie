@@ -43,6 +43,108 @@ if (process.env.STRIPE_SECRET_KEY) {
   console.warn('Warning: STRIPE_SECRET_KEY not found. Payment functionality will be disabled.');
 }
 
+// Essential API routes that must work even without OAuth setup
+export function registerEssentialApiRoutes(app: Express): void {
+  // New Stripe checkout route for free month trial with payment capture
+  app.post('/api/checkout/start-trial', async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName, 
+        email,
+        businessName,
+        trade,
+        serviceArea,
+        country,
+        isGstRegistered,
+        plan = 'pro' // Default to pro plan
+      } = req.body;
+
+      // Basic validation
+      if (!firstName || !lastName || !email || !businessName || !trade || !serviceArea || !country) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Validate plan
+      if (!['pro', 'teams'].includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      // Check if user already exists
+      const userId = `user-${email.replace(/[@.]/g, '-')}`;
+      const existingUser = await storage.getUser(userId);
+      if (existingUser) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+
+      // Store user data temporarily in session for after Stripe checkout
+      req.session.pendingUser = {
+        userId,
+        firstName,
+        lastName,
+        email,
+        businessName,
+        trade,
+        serviceArea,
+        country,
+        isGstRegistered: isGstRegistered || false,
+        plan
+      };
+
+      // Get price ID from environment (with fallback for testing)
+      const priceId = plan === 'pro' 
+        ? (process.env.STRIPE_PRICE_PRO_MONTH || 'price_1SBDgoBNVpg7WCq0mAstv9mF')
+        : (process.env.STRIPE_PRICE_TEAMS_MONTH || 'price_1SBDgpBNVpg7WCq0ivdj2fkc');
+      
+      if (!priceId) {
+        return res.status(500).json({ message: "Pricing not configured. Please contact support." });
+      }
+
+      // Create Stripe checkout session with 30-day trial
+      const stripe = await import('stripe');
+      const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-07-30.basil',
+      });
+
+      const session = await stripeClient.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        subscription_data: {
+          trial_period_days: 30,
+        },
+        customer_email: email,
+        success_url: `${process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com'}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com'}/signup?plan=${plan}`,
+        metadata: {
+          userId,
+          plan,
+          firstName,
+          lastName,
+          businessName,
+          trade,
+          serviceArea,
+          country,
+        }
+      });
+
+      console.log(`[STRIPE] Created checkout session for ${email} - plan: ${plan}`);
+      res.json({ sessionUrl: session.url });
+      
+    } catch (error) {
+      console.error('[STRIPE] Checkout error:', error);
+      res.status(500).json({ 
+        message: "Failed to create checkout session. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      });
+    }
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Anti-indexing middleware for all routes during testing
   app.use((req, res, next) => {
@@ -827,116 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New Stripe checkout route for free month trial with payment capture
-  app.post('/api/checkout/start-trial', async (req, res) => {
-    try {
-      const {
-        firstName,
-        lastName, 
-        email,
-        businessName,
-        trade,
-        serviceArea,
-        country,
-        isGstRegistered,
-        plan = 'pro' // Default to pro plan
-      } = req.body;
-
-      // Basic validation
-      if (!firstName || !lastName || !email || !businessName || !trade || !serviceArea || !country) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      // Validate plan
-      if (!['pro', 'teams'].includes(plan)) {
-        return res.status(400).json({ message: "Invalid plan selected" });
-      }
-
-      // Check if user already exists
-      const userId = `user-${email.replace(/[@.]/g, '-')}`;
-      const existingUser = await storage.getUser(userId);
-      if (existingUser) {
-        return res.status(400).json({ message: "An account with this email already exists" });
-      }
-
-      // Store user data temporarily in session for after Stripe checkout
-      req.session.pendingUser = {
-        userId,
-        firstName,
-        lastName,
-        email,
-        businessName,
-        trade,
-        serviceArea,
-        country,
-        isGstRegistered: isGstRegistered || false,
-        plan
-      };
-
-      // Get price ID from environment (with fallback for testing)
-      const priceId = plan === 'pro' 
-        ? (process.env.STRIPE_PRICE_PRO_MONTH || 'price_1SBDgoBNVpg7WCq0mAstv9mF')
-        : (process.env.STRIPE_PRICE_TEAMS_MONTH || 'price_1SBDgpBNVpg7WCq0ivdj2fkc');
-      
-      if (!priceId) {
-        return res.status(500).json({ message: "Pricing not configured. Please contact support." });
-      }
-
-      // Create Stripe checkout session with 30-day trial
-      const stripe = await import('stripe');
-      const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-07-30.basil',
-      });
-
-      const APP_URL = process.env.APP_BASE_URL || 'http://localhost:5000';
-      
-      const session = await stripeClient.checkout.sessions.create({
-        mode: 'subscription',
-        customer_email: email,
-        subscription_data: {
-          trial_period_days: 30,
-          metadata: {
-            userId,
-            plan,
-            businessName,
-            trade,
-            country
-          }
-        },
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        success_url: `${APP_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${APP_URL}/signup?plan=${plan}`,
-        metadata: {
-          userId,
-          plan,
-          firstName,
-          lastName,
-          businessName,
-          trade,
-          serviceArea,
-          country,
-          isGstRegistered: String(isGstRegistered || false)
-        }
-      });
-
-      res.json({ 
-        sessionUrl: session.url,
-        sessionId: session.id 
-      });
-
-    } catch (error) {
-      console.error("Stripe checkout creation error:", error);
-      res.status(500).json({ 
-        message: "Failed to create checkout session. Please try again.",
-        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
-      });
-    }
-  });
+  // Stripe checkout route moved to registerEssentialApiRoutes for better availability
 
   // Stripe webhook handler for checkout completion
   app.post('/api/webhook/stripe', (await import('express')).raw({type: 'application/json'}), async (req, res) => {

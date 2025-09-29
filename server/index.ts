@@ -380,6 +380,11 @@ app.use((req, res, next) => {
 const previewDemoRoutes = await import('./routes/preview-demo-auth');
 app.use('/', previewDemoRoutes.default);
 
+// CRITICAL: Register essential API routes before OAuth-dependent routes
+// This ensures signup/checkout works even if OAuth fails
+const { registerEssentialApiRoutes } = await import('./routes');
+registerEssentialApiRoutes(app);
+
 let server: any;
 try {
   // Only try full auth if all Replit OAuth env vars exist
