@@ -121,45 +121,30 @@ export default function Help() {
       {/* Content */}
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <div className="max-w-md mx-auto mb-8">
           <Link href="/contact">
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-6 text-center">
                 <Mail className="h-8 w-8 text-blue-600 mx-auto mb-3" />
                 <h3 className="font-semibold mb-2">Contact Support</h3>
-                <p className="text-sm text-gray-600">Get help from our team</p>
+                <p className="text-sm text-gray-600">Get help from our team - usually respond within 24 hours</p>
               </CardContent>
             </Card>
           </Link>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <BookOpen className="h-8 w-8 text-green-600 mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Video Tutorials</h3>
-              <p className="text-sm text-gray-600">Watch step-by-step guides</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <Users className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Community Forum</h3>
-              <p className="text-sm text-gray-600">Connect with other tradies</p>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Popular Articles */}
+        {/* Common Questions */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Popular Articles</CardTitle>
+            <CardTitle>Common Questions</CardTitle>
+            <p className="text-gray-600">For detailed help with these topics, please contact our support team.</p>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-3">
               {popularArticles.map((article, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                   <BookOpen className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-blue-600 hover:underline">{article}</span>
+                  <span className="text-sm text-gray-700">{article}</span>
                 </div>
               ))}
             </div>
@@ -171,7 +156,7 @@ export default function Help() {
           {helpCategories.map((category, index) => {
             const IconComponent = category.icon;
             return (
-              <Card key={index} className="hover:shadow-md transition-shadow">
+              <Card key={index}>
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <IconComponent className="h-6 w-6 text-blue-600" />
@@ -180,15 +165,22 @@ export default function Help() {
                   <p className="text-sm text-gray-600">{category.description}</p>
                 </CardHeader>
                 <CardContent>
+                  <p className="text-sm text-gray-600 mb-3">Common topics we can help with:</p>
                   <ul className="space-y-2">
                     {category.articles.map((article, articleIndex) => (
-                      <li key={articleIndex}>
-                        <a href="#" className="text-sm text-blue-600 hover:underline block">
-                          {article}
-                        </a>
+                      <li key={articleIndex} className="text-sm text-gray-700 flex items-center gap-2">
+                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                        {article}
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-4">
+                    <Link href="/contact">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Get Help with This
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -209,10 +201,12 @@ export default function Help() {
                   Contact Support
                 </Button>
               </Link>
-              <Button variant="outline">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Request Feature
-              </Button>
+              <a href="mailto:support@bluetradie.com">
+                <Button variant="outline">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Support
+                </Button>
+              </a>
             </div>
           </CardContent>
         </Card>

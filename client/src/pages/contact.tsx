@@ -105,14 +105,14 @@ export default function Contact() {
 
             <Card>
               <CardHeader>
-                <CardTitle>For Business Inquiries</CardTitle>
+                <CardTitle>All Inquiries</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-3">
-                  Partnerships, integrations, or enterprise solutions:
+                  For all support, business, partnerships, or technical questions:
                 </p>
-                <a href="mailto:business@bluetradie.com" className="text-blue-600 hover:underline">
-                  business@bluetradie.com
+                <a href="mailto:support@bluetradie.com" className="text-blue-600 hover:underline">
+                  support@bluetradie.com
                 </a>
               </CardContent>
             </Card>
