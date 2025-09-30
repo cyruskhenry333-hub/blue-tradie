@@ -381,7 +381,7 @@ export default function Landing() {
                   <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Advanced reporting</li>
                   <li className="flex items-center"><Check className="h-4 w-4 text-blue-500 mr-2" />Priority support</li>
                 </ul>
-                <Button onClick={handleStartFreeTrial} className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => handleStartFreeTrial('pro')} className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
                   Start Free Trial
                 </Button>
               </CardContent>
@@ -404,7 +404,7 @@ export default function Landing() {
                   <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />White-label options</li>
                   <li className="flex items-center"><Check className="h-4 w-4 text-purple-500 mr-2" />API access</li>
                 </ul>
-                <Button variant="outline" className="w-full mt-6 border-purple-500 text-purple-600 hover:bg-purple-50">
+                <Button onClick={() => handleStartFreeTrial('teams')} variant="outline" className="w-full mt-6 border-purple-500 text-purple-600 hover:bg-purple-50">
                   Start Free Trial
                 </Button>
               </CardContent>
