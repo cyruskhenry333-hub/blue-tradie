@@ -78,7 +78,27 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // Authentication check for protected routes
+  const protectedRoutes = ['/dashboard', '/welcome', '/profile', '/settings', '/invoices', '/ai-advisors'];
+  
+  protectedRoutes.forEach(route => {
+    app.get(route, (req: any, res) => {
+      // Check if user is authenticated via magic link
+      if (req.session?.isAuthenticated && req.session?.userId) {
+        return res.sendFile(path.resolve(distPath, "index.html"));
+      }
+      
+      // Check if user is in demo mode (existing demo system)
+      if (req.session?.mode === 'demo' && req.session?.testUser) {
+        return res.sendFile(path.resolve(distPath, "index.html"));
+      }
+      
+      // If no authentication, redirect to login
+      return res.redirect('/login');
+    });
+  });
+
+  // fall through to index.html if the file doesn't exist (for public routes)
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });

@@ -130,7 +130,15 @@ app.use((req, res, next) => {
     <div class="login-box">
         <h1>Blue Tradie Demo</h1>
         
-        <h2>Standard Login</h2>
+        <h2>Customer Login</h2>
+        <form method="POST" action="/api/auth/request-login" onsubmit="handleMagicLinkSubmit(event)">
+            <input type="email" name="email" placeholder="Your email address" required>
+            <button type="submit" class="demo-button">Send Login Link</button>
+        </form>
+        
+        <div class="divider"></div>
+        
+        <h2>Demo Login</h2>
         <form method="POST" action="/test-login">
             <input type="text" name="username" placeholder="Username" value="cy" required>
             <input type="password" name="password" placeholder="Password" value="vip13" required>
@@ -175,6 +183,38 @@ app.use((req, res, next) => {
             }
           } catch (error) {
             alert('Demo verification failed: ' + error.message);
+          }
+        }
+        
+        async function handleMagicLinkSubmit(event) {
+          event.preventDefault();
+          const form = event.target;
+          const email = form.email.value;
+          const button = form.querySelector('button');
+          
+          button.disabled = true;
+          button.textContent = 'Sending...';
+          
+          try {
+            const response = await fetch('/api/auth/request-login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+              alert('Login link sent to your email! Check your inbox.');
+              form.email.value = '';
+            } else {
+              alert(result.message || 'Failed to send login link');
+            }
+          } catch (error) {
+            alert('Failed to send login link: ' + error.message);
+          } finally {
+            button.disabled = false;
+            button.textContent = 'Send Login Link';
           }
         }
         </script>
