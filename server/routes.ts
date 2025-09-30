@@ -139,7 +139,8 @@ export function registerEssentialApiRoutes(app: Express): void {
       console.error('[STRIPE] Checkout error:', error);
       res.status(500).json({ 
         message: "Failed to create checkout session. Please try again.",
-        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        error: (error as Error).message, // Always show error for debugging
+        details: process.env.NODE_ENV === 'development' ? error : undefined
       });
     }
   });
