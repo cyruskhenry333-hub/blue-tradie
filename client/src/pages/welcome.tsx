@@ -97,7 +97,7 @@ export default function Welcome() {
           </h1>
           
           <p className="text-xl text-gray-600 mb-8">
-            Your free month trial has started. You now have full access to all features for 30 days.
+            Your free trial has started. You now have full access to all features for 30 days.
           </p>
 
           {/* Features Grid */}

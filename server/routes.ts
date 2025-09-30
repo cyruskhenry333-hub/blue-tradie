@@ -125,12 +125,14 @@ export function registerEssentialApiRoutes(app: Express): void {
         metadata: {
           userId,
           plan,
+          email,
           firstName,
           lastName,
           businessName,
           trade,
           serviceArea,
           country,
+          isGstRegistered: isGstRegistered.toString(),
         }
       });
 
@@ -991,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { emailService } = await import("./services/sendgrid-email-service");
           await emailService.sendEmail({
             to: session.customer_email,
-            subject: "Welcome to Blue Tradie - Your Free Month Starts Now! 🎉",
+            subject: "Welcome to Blue Tradie - Your Free Trial Starts Now! 🎉",
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${metadata.firstName}!</h2>
@@ -1010,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   Get Started Now
                 </a></p>
                 <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                  Your free month ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
+                  Your free trial ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
                   You'll receive 3 reminder emails before billing starts. Cancel anytime!
                 </p>
               </div>
