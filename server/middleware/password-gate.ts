@@ -14,7 +14,7 @@ export function passwordGateMiddleware(req: AuthenticatedRequest, res: Response,
     return next();
   }
 
-  // Skip password gate for API endpoints, health checks, and assets
+  // Skip password gate for API endpoints, health checks, assets, and login routes
   if (req.path.startsWith('/api/') || 
       req.path.startsWith('/health') ||
       req.path.startsWith('/assets/') ||
@@ -24,7 +24,9 @@ export function passwordGateMiddleware(req: AuthenticatedRequest, res: Response,
       req.path.endsWith('.png') ||
       req.path.endsWith('.jpg') ||
       req.path.endsWith('.ico') ||
-      req.path === '/password-gate') {
+      req.path === '/password-gate' ||
+      req.path === '/login' ||
+      req.path.startsWith('/auth/')) {
     return next();
   }
 
