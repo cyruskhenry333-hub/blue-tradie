@@ -44,7 +44,7 @@ if (process.env.STRIPE_SECRET_KEY) {
 }
 
 // Essential API routes that must work even without OAuth setup
-export function registerEssentialApiRoutes(app: Express): void {
+export async function registerEssentialApiRoutes(app: Express): Promise<void> {
   // New Stripe checkout route for free month trial with payment capture
   app.post('/api/checkout/start-trial', async (req, res) => {
     try {
@@ -148,9 +148,145 @@ export function registerEssentialApiRoutes(app: Express): void {
       });
     }
   });
+
+  // Magic link authentication routes
+  const { authService } = await import('./services/auth-service');
+  const { magicLinkRateLimiter } = await import('./services/rate-limiter');
+  const { emailServiceWrapper } = await import('./services/email-service-wrapper');
+  
+  // Request magic link login
+  app.post('/api/auth/request-login', async (req, res) => {
+    try {
+      const { email } = req.body;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('User-Agent');
+      
+      // Validate input
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: 'Valid email required' });
+      }
+      
+      // Rate limiting by IP
+      const rateLimitKey = `magic_link:${ipAddress}`;
+      if (!magicLinkRateLimiter.isAllowed(rateLimitKey)) {
+        const remainingTime = Math.ceil(magicLinkRateLimiter.getRemainingTime(rateLimitKey) / 1000 / 60);
+        return res.status(429).json({ 
+          message: `Too many requests. Please try again in ${remainingTime} minutes.` 
+        });
+      }
+      
+      // Always return success to prevent user enumeration
+      const successResponse = { message: 'If an account exists with this email, a login link has been sent.' };
+      
+      // Check if user exists
+      const user = await authService.getUserByEmail(email);
+      if (!user) {
+        // Still return success, but don't send email
+        return res.json(successResponse);
+      }
+      
+      // Create magic link token
+      const { token } = await authService.createMagicLinkToken(
+        email, 
+        user.id, 
+        ipAddress, 
+        userAgent
+      );
+      
+      // Send magic link email
+      const appUrl = process.env.APP_URL || 'https://blue-tradie.onrender.com';
+      const loginUrl = `${appUrl}/auth/verify?token=${token}`;
+      
+      const emailSent = await emailServiceWrapper.sendMagicLink(
+        email, 
+        user.firstName || 'there', 
+        loginUrl
+      );
+      
+      if (!emailSent) {
+        console.error('[AUTH] Failed to send magic link email to:', email);
+      }
+      
+      res.json(successResponse);
+      
+    } catch (error) {
+      console.error('[AUTH] Magic link request error:', error);
+      res.status(500).json({ message: 'Failed to process request' });
+    }
+  });
+  
+  // Verify magic link and create session
+  app.get('/auth/verify', async (req, res) => {
+    try {
+      const { token } = req.query;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('User-Agent');
+      
+      if (!token || typeof token !== 'string') {
+        return res.redirect('/login?error=invalid_link');
+      }
+      
+      // Verify and consume the magic link token
+      const magicToken = await authService.verifyAndConsumeMagicLinkToken(token);
+      
+      if (!magicToken) {
+        return res.redirect('/login?error=expired_link');
+      }
+      
+      // Get user (should exist since we stored userId with token)
+      const user = magicToken.userId ? await authService.getUserByEmail(magicToken.email) : null;
+      
+      if (!user) {
+        return res.redirect('/login?error=user_not_found');
+      }
+      
+      // Create auth session
+      const session = await authService.createSession(user.id, ipAddress, userAgent);
+      
+      // Set secure cookie
+      const cookieName = authService.getSessionCookieName();
+      const cookieOptions = authService.getSessionCookieOptions();
+      res.cookie(cookieName, session.id, cookieOptions);
+      
+      // Redirect to dashboard or continue URL
+      const continueUrl = req.query.continue as string;
+      const redirectUrl = continueUrl && continueUrl.startsWith('/') ? continueUrl : '/dashboard';
+      
+      res.redirect(redirectUrl);
+      
+    } catch (error) {
+      console.error('[AUTH] Magic link verification error:', error);
+      res.redirect('/login?error=verification_failed');
+    }
+  });
+  
+  // Logout route
+  app.post('/api/auth/logout', async (req, res) => {
+    try {
+      const cookieName = authService.getSessionCookieName();
+      const sessionId = req.cookies[cookieName];
+      
+      if (sessionId) {
+        await authService.revokeSession(sessionId);
+      }
+      
+      // Clear cookie
+      res.clearCookie(cookieName, authService.getSessionCookieOptions());
+      res.json({ message: 'Logged out successfully' });
+      
+    } catch (error) {
+      console.error('[AUTH] Logout error:', error);
+      res.status(500).json({ message: 'Failed to logout' });
+    }
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint (fast, no external dependencies)
+  app.get('/healthz', (_req, res) => {
+    res.status(200).send('ok');
+  });
+
   // Anti-indexing middleware for all routes during testing
   app.use((req, res, next) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
@@ -988,48 +1124,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
 
-        // Send welcome email
+        // Send welcome email with magic link for immediate access
         try {
-          const { emailService } = await import("./services/sendgrid-email-service");
-          await emailService.sendEmail({
-            to: session.customer_email,
-            subject: "Welcome to Blue Tradie - Your Free Trial Starts Now! 🎉",
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${metadata.firstName}!</h2>
-                <p>Your ${metadata.plan === 'teams' ? 'Teams' : 'Pro'} plan trial has started! You have 30 days of full access.</p>
-                <div style="background: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                  <h3 style="margin: 0; color: #1e40af;">What's Next?</h3>
-                  <ul style="margin: 10px 0;">
-                    <li>✅ Chat with your 6 AI Business Advisors</li>
-                    <li>✅ Create professional invoices with GST</li>
-                    <li>✅ Connect with other tradies in the directory</li>
-                    <li>✅ Set up smart business automation</li>
-                  </ul>
-                </div>
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.APP_BASE_URL || 'http://localhost:5000'}/dashboard" 
-                     style="background: #1e40af; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; margin-bottom: 15px;">
-                    Access Your Dashboard
-                  </a>
-                </div>
-                <div style="background: #e0f2fe; padding: 15px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #0288d1;">
-                  <h4 style="margin: 0 0 10px 0; color: #01579b;">🔐 How to Log In</h4>
-                  <p style="margin: 0; color: #01579b; font-size: 14px;">
-                    We use secure email login - no passwords to remember! When you need to access your account, 
-                    visit <a href="${process.env.APP_BASE_URL || 'http://localhost:5000'}/login" style="color: #0288d1;">${process.env.APP_BASE_URL || 'bluetradie.com'}/login</a> 
-                    and enter your email. We'll send you an instant login link.
-                  </p>
-                </div>
-                <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                  Your free trial ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}. 
-                  You'll receive 3 reminder emails before billing starts. Cancel anytime!
-                </p>
-              </div>
-            `
-          });
+          const { authService } = await import('./services/auth-service');
+          const { emailServiceWrapper } = await import('./services/email-service-wrapper');
+          
+          // Create magic link token for automatic login
+          const { token } = await authService.createMagicLinkToken(
+            session.customer_email || metadata.email,
+            metadata.userId,
+            'stripe-webhook',
+            'stripe-checkout'
+          );
+          
+          // Build secure login URL
+          const appUrl = process.env.APP_URL || 'https://blue-tradie.onrender.com';
+          const loginUrl = `${appUrl}/auth/verify?token=${token}`;
+          
+          // Send welcome email with magic link
+          const emailSent = await emailServiceWrapper.sendWelcomeWithMagicLink(
+            session.customer_email || metadata.email,
+            metadata.firstName,
+            metadata.plan,
+            loginUrl
+          );
+          
+          if (!emailSent) {
+            console.error('[STRIPE WEBHOOK] Failed to send welcome email with magic link');
+          }
+          
         } catch (emailError) {
-          console.error("Failed to send welcome email:", emailError);
+          console.error('[STRIPE WEBHOOK] Failed to send welcome email:', emailError);
         }
 
         console.log(`[STRIPE WEBHOOK] User created successfully: ${metadata.userId}`);
@@ -3329,8 +3454,18 @@ What would you like to know more about?`;
   // Register analytics routes
   registerAnalyticsRoutes(app);
   
-  // Register demo routes
-  registerDemoRoutes(app);
+  // Register demo routes (conditionally in preview)
+  const PREVIEW_DISABLE_DEMO_ROUTES = process.env.PREVIEW_DISABLE_DEMO_ROUTES === 'true';
+  
+  if (!PREVIEW_DISABLE_DEMO_ROUTES) {
+    registerDemoRoutes(app);
+    
+    // Register demo magic link routes
+    const demoMagicLinkRoutes = await import('./routes/demo-magic-link');
+    app.use('/', demoMagicLinkRoutes.default);
+  } else {
+    console.log('[BOOT] Preview mode: demo routes disabled');
+  }
   
   // Register Stripe webhook routes
   registerStripeWebhookRoutes(app);
@@ -3340,153 +3475,6 @@ What would you like to know more about?`;
   registerInvoiceRoutes(app);
   
   // Waitlist automation routes removed - functionality integrated into waitlist-service
-  
-  // Authentication middleware for real users
-  function requireAuthentication(req: any, res: any, next: any) {
-    // Check if user is authenticated via magic link
-    if (req.session?.isAuthenticated && req.session?.userId) {
-      return next();
-    }
-    
-    // Check if user is in demo mode (existing demo system)
-    if (req.session?.mode === 'demo' && req.session?.testUser) {
-      return next();
-    }
-    
-    // If no authentication, redirect to login
-    return res.redirect('/login');
-  }
-
-  // Magic link authentication for real users
-  app.post('/api/auth/request-login', async (req, res) => {
-    try {
-      const { email } = req.body;
-      
-      if (!email || !email.includes('@')) {
-        return res.status(400).json({ message: 'Valid email required' });
-      }
-      
-      // Check if user exists
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(404).json({ message: 'No account found with this email. Please sign up first.' });
-      }
-      
-      // Generate magic link token (valid for 15 minutes)
-      const token = require('crypto').randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-      
-      // Store token temporarily (you might want to use Redis or database)
-      global.magicLinkTokens = global.magicLinkTokens || new Map();
-      global.magicLinkTokens.set(token, {
-        userId: user.id,
-        email: user.email,
-        expiresAt
-      });
-      
-      // Send magic link email
-      const { emailService } = await import("./services/sendgrid-email-service");
-      const loginUrl = `${process.env.APP_BASE_URL || 'https://blue-tradie.onrender.com'}/auth/login?token=${token}`;
-      
-      await emailService.sendEmail({
-        to: email,
-        subject: "Log in to Blue Tradie",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1e40af;">Log in to Blue Tradie</h2>
-            <p>Hi ${user.firstName},</p>
-            <p>Click the button below to securely log in to your Blue Tradie account:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${loginUrl}" 
-                 style="background: #1e40af; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
-                Log In to Blue Tradie
-              </a>
-            </div>
-            <p style="color: #666; font-size: 14px;">
-              This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
-            </p>
-            <p style="color: #666; font-size: 12px;">
-              If the button doesn't work, copy this link: ${loginUrl}
-            </p>
-          </div>
-        `
-      });
-      
-      res.json({ message: 'Login link sent to your email' });
-      
-    } catch (error) {
-      console.error('Magic link request error:', error);
-      res.status(500).json({ message: 'Failed to send login link' });
-    }
-  });
-  
-  // Handle magic link login
-  app.get('/auth/login', async (req, res) => {
-    try {
-      const { token } = req.query;
-      
-      if (!token) {
-        return res.status(400).send('Invalid login link');
-      }
-      
-      // Check token
-      global.magicLinkTokens = global.magicLinkTokens || new Map();
-      const tokenData = global.magicLinkTokens.get(token);
-      
-      if (!tokenData || new Date() > tokenData.expiresAt) {
-        global.magicLinkTokens.delete(token);
-        return res.status(400).send(`
-          <div style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #ef4444;">Login Link Expired</h2>
-            <p>This login link has expired. Please request a new one.</p>
-            <a href="/login" style="color: #1e40af;">Request New Login Link</a>
-          </div>
-        `);
-      }
-      
-      // Get user data
-      const user = await storage.getUser(tokenData.userId);
-      if (!user) {
-        return res.status(404).send('User not found');
-      }
-      
-      // Set session
-      (req.session as any).userId = user.id;
-      (req.session as any).userEmail = user.email;
-      (req.session as any).isAuthenticated = true;
-      (req.session as any).user = {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        businessName: user.businessName
-      };
-      
-      // Clean up token
-      global.magicLinkTokens.delete(token);
-      
-      // Redirect to dashboard
-      res.redirect('/dashboard');
-      
-    } catch (error) {
-      console.error('Magic link login error:', error);
-      res.status(500).send('Login failed');
-    }
-  });
-  
-  // Logout route
-  app.post('/api/auth/logout', (req: any, res) => {
-    req.session.destroy((err: any) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to logout' });
-      }
-      res.json({ message: 'Logged out successfully' });
-    });
-  });
-
-  // Register demo magic link routes
-  const demoMagicLinkRoutes = await import('./routes/demo-magic-link');
-  app.use('/', demoMagicLinkRoutes.default);
   
   // Register admin email panel routes
   const adminEmailPanelRoutes = await import('./routes/admin-email-panel');

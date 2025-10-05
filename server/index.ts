@@ -124,11 +124,34 @@ app.use((req, res, next) => {
         .info { text-align: center; color: #666; font-size: 14px; margin-top: 20px; }
         .divider { border-top: 1px solid #e5e7eb; margin: 30px 0; text-align: center; position: relative; }
         .divider::after { content: "OR"; background: white; padding: 0 15px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #666; }
+        .error { background: #fee; border: 1px solid #fcc; color: #c66; padding: 10px; border-radius: 6px; margin-bottom: 20px; }
+        .success { background: #efe; border: 1px solid #cfc; color: #6c6; padding: 10px; border-radius: 6px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="login-box">
         <h1>Blue Tradie Demo</h1>
+        
+        <script>
+        // Show error messages from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const errorMessages = {
+          'invalid_link': 'Invalid login link. Please request a new one.',
+          'expired_link': 'Login link has expired. Please request a new one.',
+          'user_not_found': 'Account not found. Please sign up first.',
+          'verification_failed': 'Login verification failed. Please try again.'
+        };
+        
+        if (error && errorMessages[error]) {
+          document.addEventListener('DOMContentLoaded', function() {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = errorMessages[error];
+            document.querySelector('.login-box').appendChild(errorDiv);
+          });
+        }
+        </script>
         
         <h2>Customer Login</h2>
         <form method="POST" action="/api/auth/request-login" onsubmit="handleMagicLinkSubmit(event)">
@@ -423,7 +446,7 @@ app.use('/', previewDemoRoutes.default);
 // CRITICAL: Register essential API routes before OAuth-dependent routes
 // This ensures signup/checkout works even if OAuth fails
 const { registerEssentialApiRoutes } = await import('./routes');
-registerEssentialApiRoutes(app);
+await registerEssentialApiRoutes(app);
 
 let server: any;
 try {

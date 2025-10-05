@@ -26,6 +26,46 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Auth sessions for magic-link authentication
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(),
+    revokedAt: timestamp("revoked_at"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+  },
+  (table) => [
+    index("idx_auth_sessions_user_id").on(table.userId),
+    index("idx_auth_sessions_expires_at").on(table.expiresAt),
+  ],
+);
+
+// Magic link tokens for passwordless authentication
+export const magicLinkTokens = pgTable(
+  "magic_link_tokens", 
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    purpose: text("purpose").notNull().default("login"), // Only "login" for now
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(),
+    consumedAt: timestamp("consumed_at"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+  },
+  (table) => [
+    index("idx_magic_tokens_hash").on(table.tokenHash),
+    index("idx_magic_tokens_email").on(table.email),
+    index("idx_magic_tokens_expires_at").on(table.expiresAt),
+  ],
+);
+
 // User storage table (mandatory for Replit Auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
@@ -581,3 +621,11 @@ export type WaitlistEntry = typeof waitlistEntries.$inferSelect;
 export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 export type SelectWaitlist = typeof waitlist.$inferSelect;
 export type RoadmapVote = typeof roadmapVotes.$inferSelect;
+
+// Auth session types
+export type AuthSession = typeof authSessions.$inferSelect;
+export type InsertAuthSession = typeof authSessions.$inferInsert;
+
+// Magic link token types  
+export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
+export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;

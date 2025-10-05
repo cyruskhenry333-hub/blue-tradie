@@ -78,23 +78,44 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // Authentication check for protected routes
-  const protectedRoutes = ['/dashboard', '/welcome', '/profile', '/settings', '/invoices', '/ai-advisors'];
-  
-  protectedRoutes.forEach(route => {
-    app.get(route, (req: any, res) => {
-      // Check if user is authenticated via magic link
-      if (req.session?.isAuthenticated && req.session?.userId) {
-        return res.sendFile(path.resolve(distPath, "index.html"));
+  // Authentication middleware
+  async function requireAuth(req: any, res: any, next: any) {
+    try {
+      // Import auth service dynamically
+      const { authService } = await import('./services/auth-service');
+      
+      // Check for session cookie
+      const cookieName = authService.getSessionCookieName();
+      const sessionId = req.cookies[cookieName];
+      
+      if (sessionId) {
+        const session = await authService.getValidSession(sessionId);
+        if (session) {
+          req.user = { id: session.userId };
+          return next();
+        }
       }
       
       // Check if user is in demo mode (existing demo system)
       if (req.session?.mode === 'demo' && req.session?.testUser) {
-        return res.sendFile(path.resolve(distPath, "index.html"));
+        return next();
       }
       
       // If no authentication, redirect to login
       return res.redirect('/login');
+      
+    } catch (error) {
+      console.error('[AUTH] Authentication check failed:', error);
+      return res.redirect('/login');
+    }
+  }
+  
+  // Protected routes requiring authentication
+  const protectedRoutes = ['/dashboard', '/welcome', '/profile', '/settings', '/invoices', '/ai-advisors'];
+  
+  protectedRoutes.forEach(route => {
+    app.get(route, requireAuth, (req: any, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
     });
   });
 
