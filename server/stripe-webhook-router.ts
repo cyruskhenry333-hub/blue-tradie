@@ -13,6 +13,33 @@ const stripe = new Stripe(stripeSecret, { apiVersion: "2025-07-30.basil" });
 
 export const stripeWebhookRouter = Router();
 
+// Debug endpoint to manually create user (remove after testing)
+stripeWebhookRouter.post("/debug/create-user", async (req, res) => {
+  try {
+    const { email, firstName = "Test", lastName = "User" } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email required" });
+    }
+    
+    const user = await storage.upsertUser({
+      id: `manual-${Date.now()}`,
+      email,
+      firstName,
+      lastName,
+      country: "Australia", 
+      trade: "Test Trade",
+      isOnboarded: true,
+      isFreeTrialUser: true,
+      freeTrialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
+    
+    res.json({ success: true, user: { id: user.id, email: user.email } });
+  } catch (error) {
+    console.error("Manual user creation error:", error);
+    res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
 // Stripe webhook endpoint with proper raw body parsing
 stripeWebhookRouter.post(
   "/webhook",
