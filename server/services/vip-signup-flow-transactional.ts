@@ -97,7 +97,7 @@ class VIPSignUpFlowTransactional implements TransactionalEmailTemplates {
                 <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
                     <tr>
                         <td style="background: #f97316; border-radius: 6px; text-align: center; padding: 0;">
-                            <a href="http://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/api/waitlist/request-early-access?email=${encodeURIComponent(entry.email)}" 
+                            <a href="${process.env.APP_BASE_URL || 'https://bluetradie.com'}/api/waitlist/request-early-access?email=${encodeURIComponent(entry.email)}" 
                                style="display: inline-block; padding: 12px 24px; color: white !important; background: #f97316; border: none; font-weight: bold; text-decoration: none; border-radius: 6px;">
                                 Activate Demo Access
                             </a>
@@ -187,13 +187,13 @@ class VIPSignUpFlowTransactional implements TransactionalEmailTemplates {
             <div class="instructions">
                 <h3>🚀 How to Get Started</h3>
                 <ol>
-                    <li><strong>Visit:</strong> <a href="http://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/demo">Blue Tradie Demo Platform</a></li>
+                    <li><strong>Visit:</strong> <a href="${process.env.APP_BASE_URL || 'https://bluetradie.com'}/demo">Blue Tradie Demo Platform</a></li>
                     <li><strong>Enter your demo code:</strong> ${demoCode}</li>
                     <li><strong>Start exploring!</strong> All features are unlocked</li>
                 </ol>
                 
                 <div style="text-align: center; margin: 20px 0;">
-                    <a href="http://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/demo" class="button">
+                    <a href="${process.env.APP_BASE_URL || 'https://bluetradie.com'}/demo" class="button">
                         🚀 Launch Blue Tradie Demo
                     </a>
                 </div>

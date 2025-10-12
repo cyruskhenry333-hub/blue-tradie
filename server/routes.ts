@@ -8,7 +8,7 @@ import { storage } from "./storage";
 // ES module compatibility for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { setupAuth, isAuthenticated } from "./replitAuth";
+// Removed Replit auth import - using magic link authentication
 import { unifiedAuth } from "./unifiedAuth";
 import { demoService } from "./services/demo-service";
 import { AITokenService } from "./services/ai-token-service";
@@ -861,8 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const usageMonitor = UsageMonitor.getInstance();
   app.use('/api', usageMonitor.trackApiCall);
   
-  // Auth middleware
-  await setupAuth(app);
+  // Auth middleware (Replit auth removed - using magic link authentication only)
 
   // Auth routes (use simple auth for beta testing)
   app.get('/api/auth/user', async (req: any, res) => {

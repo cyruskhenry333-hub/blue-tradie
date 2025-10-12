@@ -1,12 +1,12 @@
 import type { Express } from "express";
-import { isAuthenticated } from "../replitAuth";
+import { unifiedAuth } from "../unifiedAuth";
 import { db } from "../db";
 import { chatMessages, users } from "@shared/schema";
 import { eq, desc, gte, sql, and } from "drizzle-orm";
 
 export function registerAnalyticsRoutes(app: Express) {
   // Real-time advisor usage analytics
-  app.get("/api/analytics/advisor-usage", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/advisor-usage", unifiedAuth, async (req, res) => {
     try {
       // Get date ranges for weekly analysis
       const oneWeekAgo = new Date();
@@ -158,7 +158,7 @@ export function registerAnalyticsRoutes(app: Express) {
   });
 
   // Additional analytics endpoints for migration tracking
-  app.get("/api/analytics/migration-sources", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/migration-sources", unifiedAuth, async (req, res) => {
     try {
       // This would track where users are migrating from
       // For now, return sample data structure
