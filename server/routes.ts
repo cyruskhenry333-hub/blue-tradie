@@ -194,7 +194,7 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
       );
       
       // Send magic link email
-      const appUrl = process.env.APP_URL || 'https://blue-tradie.onrender.com';
+      const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
       const loginUrl = `${appUrl}/auth/verify?token=${token}`;
       
       const emailSent = await emailServiceWrapper.sendMagicLink(
@@ -1137,7 +1137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           // Build secure login URL
-          const appUrl = process.env.APP_URL || 'https://blue-tradie.onrender.com';
+          const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
           const loginUrl = `${appUrl}/auth/verify?token=${token}`;
           
           // Send welcome email with magic link
