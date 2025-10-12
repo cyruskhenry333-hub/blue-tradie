@@ -2,6 +2,7 @@ import type { Express } from "express";
 import Stripe from "stripe";
 import { storage } from "../storage";
 import type { User } from "@shared/schema";
+import { unifiedAuth } from "../unifiedAuth";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -18,11 +19,7 @@ export function registerSubscriptionRoutes(app: Express) {
   };
 
   // Create subscription checkout session
-  app.post('/api/create-subscription', async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+  app.post('/api/create-subscription', unifiedAuth, async (req, res) => {
     if (!isSubscriptionsEnabled()) {
       return res.status(503).json({ 
         error: 'Subscriptions are not currently available',
@@ -30,7 +27,22 @@ export function registerSubscriptionRoutes(app: Express) {
       });
     }
 
-    let user = req.user as User;
+    const userClaims = (req as any).user?.claims;
+    if (!userClaims) {
+      return res.status(401).json({ error: 'User authentication failed' });
+    }
+
+    // Create user object from authentication claims  
+    if (!userClaims.sub || !userClaims.email) {
+      return res.status(400).json({ error: 'Missing required user information' });
+    }
+
+    const user: Partial<User> = {
+      id: userClaims.sub,
+      email: userClaims.email,
+      firstName: userClaims.first_name || 'User',
+      lastName: userClaims.last_name || ''
+    };
 
     try {
       // Check if user already has an active subscription
@@ -46,24 +58,20 @@ export function registerSubscriptionRoutes(app: Express) {
         }
       }
 
-      if (!user.email) {
-        throw new Error('No user email on file');
-      }
-
       // Create or retrieve Stripe customer
       let customerId = user.stripeCustomerId;
       if (!customerId) {
         const customer = await stripe.customers.create({
-          email: user.email,
+          email: user.email!,
           name: `${user.firstName} ${user.lastName}`,
           metadata: {
-            userId: user.id,
+            userId: user.id!,
             trade: user.trade || 'unknown',
             country: user.country || 'Australia'
           }
         });
         customerId = customer.id;
-        await storage.updateUserStripeInfo(user.id, { stripeCustomerId: customerId });
+        await storage.updateUserStripeInfo(user.id!, { stripeCustomerId: customerId });
       }
 
       // Create subscription checkout session
@@ -86,8 +94,8 @@ export function registerSubscriptionRoutes(app: Express) {
         success_url: `${baseUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/subscription/cancel`,
         metadata: {
-          userId: user.id,
-          userEmail: user.email,
+          userId: user.id!,
+          userEmail: user.email!,
           subscriptionType: 'blue_core'
         },
         billing_address_collection: 'required',
@@ -111,12 +119,23 @@ export function registerSubscriptionRoutes(app: Express) {
   });
 
   // Get subscription status
-  app.get('/api/subscription/status', async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: 'Unauthorized' });
+  app.get('/api/subscription/status', unifiedAuth, async (req, res) => {
+    const userClaims = (req as any).user?.claims;
+    if (!userClaims) {
+      return res.status(401).json({ error: 'User authentication failed' });
     }
 
-    const user = req.user as User;
+    // Create user object from authentication claims
+    if (!userClaims.sub || !userClaims.email) {
+      return res.status(400).json({ error: 'Missing required user information' });
+    }
+
+    const user: Partial<User> = {
+      id: userClaims.sub,
+      email: userClaims.email,
+      firstName: userClaims.first_name || 'User',
+      lastName: userClaims.last_name || ''
+    };
 
     try {
       if (!user.stripeSubscriptionId) {

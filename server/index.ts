@@ -448,22 +448,13 @@ app.use('/', previewDemoRoutes.default);
 const { registerEssentialApiRoutes } = await import('./routes');
 await registerEssentialApiRoutes(app);
 
+// Setup routes without Replit OAuth dependency
 let server: any;
 try {
-  // Only try full auth if all Replit OAuth env vars exist
-  if (
-    process.env.REPLIT_CLIENT_ID &&
-    process.env.REPLIT_CLIENT_SECRET &&
-    process.env.REPLIT_REDIRECT_URI &&
-    process.env.REPLIT_DOMAINS
-  ) {
-    server = await registerRoutes(app);
-  } else {
-    throw new Error('Replit OAuth env not set');
-  }
+  server = await registerRoutes(app);
 } catch (err: any) {
   console.warn(
-    '[BOOT] Auth setup failed or not configured; enabling demo auth in production. Reason:',
+    '[BOOT] Auth setup failed; enabling demo auth in production. Reason:',
     err?.message ?? err
   );
   // Turn on the preview/demo auth routes even in production

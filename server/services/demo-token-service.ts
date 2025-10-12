@@ -9,16 +9,18 @@ export class DemoTokenService {
   
   // Get current environment base URL
   private static getCurrentBaseUrl(): string {
-    const repl_id = process.env.REPL_ID;
-    const repl_owner = process.env.REPL_OWNER;
-    const replit_domain = process.env.REPLIT_DEV_DOMAIN;
+    // Use APP_BASE_URL if set, otherwise determine based on environment
+    const baseUrl = process.env.APP_BASE_URL;
+    if (baseUrl) {
+      return baseUrl;
+    }
     
-    if (repl_id && repl_owner) {
-      return `https://${repl_id}.${repl_owner}.repl.co`;
-    } else if (replit_domain) {
-      return `https://${replit_domain}`;
+    // Default to production domain
+    const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+    if (environment === 'production') {
+      return 'https://bluetradie.com';
     } else {
-      return 'https://bluetradie.com'; // Production fallback
+      return 'http://localhost:5000';
     }
   }
   
