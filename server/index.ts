@@ -18,17 +18,22 @@ const app = express();
 // Trust proxy for secure cookies behind proxy
 app.set('trust proxy', 1);
 
-// Sentry request handler must be the first middleware (only if Sentry is initialized)
+/**
+ * 1) MOUNT WEBHOOK FIRST — BEFORE ANYTHING ELSE.
+ *    Nothing should run before this. Especially NOT:
+ *    - express.json(), bodyParser.json(), bodyParser.urlencoded()
+ *    - cookieParser(), compression(), cors(), helmet(), routers
+ */
+import { stripeWebhookStrict } from "./stripe-webhook-strict";
+app.use("/api/stripe", stripeWebhookStrict);
+
+// Sentry request handler (after webhook)
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
 
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
-
-// Mount Stripe webhook BEFORE any JSON body parsers
-import { stripeWebhookRouter } from "./stripe-webhook-router";
-app.use("/api/stripe", stripeWebhookRouter);
 
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '10mb' }));
