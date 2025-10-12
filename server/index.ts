@@ -26,6 +26,10 @@ if (process.env.SENTRY_DSN) {
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
 
+// Mount Stripe webhook BEFORE any JSON body parsers
+import { stripeWebhookRouter } from "./stripe-webhook-router";
+app.use("/api/stripe", stripeWebhookRouter);
+
 // Increase payload limits for file uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
