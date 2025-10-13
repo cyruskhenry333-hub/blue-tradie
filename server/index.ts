@@ -9,6 +9,7 @@ import { passwordGateMiddleware, handlePasswordGate } from "./middleware/passwor
 import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
 import version from "./version.json";
+import { stripeWebhookRaw } from "./stripe-webhook-raw";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -18,16 +19,7 @@ const app = express();
 // Trust proxy for secure cookies behind proxy
 app.set('trust proxy', 1);
 
-/**
- * 1) MOUNT WEBHOOK FIRST — BEFORE ANYTHING ELSE.
- *    Nothing should run before this. Especially NOT:
- *    - express.json(), bodyParser.json(), bodyParser.urlencoded()
- *    - cookieParser(), compression(), cors(), helmet(), routers
- */
-import { stripeWebhookStrict } from "./stripe-webhook-strict";
-app.use("/api/stripe", stripeWebhookStrict);
-
-// Sentry request handler (after webhook)
+// Sentry request handler 
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
@@ -35,9 +27,30 @@ if (process.env.SENTRY_DSN) {
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
 
-// Increase payload limits for file uploads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+// ===== STRIPE WEBHOOK MUST BE FIRST - RAW BODY REQUIRED =====
+app.use('/api', stripeWebhookRaw);
+
+// ===== GLOBAL PARSERS THAT CAPTURE RAW BYTES =====
+// Augment Express Request to carry rawBody
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
+  }
+}
+
+// Capture raw bytes for ANY incoming request before JSON/urlencoded parsing mutates req.body
+const captureRaw = (req: any, _res: any, buf: Buffer) => {
+  // Only keep for JSON requests (Stripe sends application/json)
+  if (req.headers["content-type"]?.startsWith("application/json")) {
+    req.rawBody = Buffer.from(buf);
+  }
+};
+
+// Register parsers with verify hooks to capture raw buffer
+app.use(express.json({ verify: captureRaw, limit: '10mb' }));
+app.use(express.urlencoded({ verify: captureRaw, extended: false, limit: '10mb' }));
 
 // Note: Demo routes will be added after session setup
 
