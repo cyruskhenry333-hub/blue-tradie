@@ -71,3 +71,13 @@ stripeWebhookRaw.post(
     }
   }
 );
+
+// Simple ping test route to verify API is reachable  
+stripeWebhookRaw.get("/webhook/ping", (req: Request, res: Response) => {
+  res.json({ 
+    ok: true, 
+    verifyDisabled: STRIPE_VERIFY_DISABLED || false,
+    path: req.originalUrl,
+    timestamp: new Date().toISOString()
+  });
+});
