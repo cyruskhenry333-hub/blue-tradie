@@ -3467,7 +3467,7 @@ What would you like to know more about?`;
   }
   
   // Register Stripe webhook routes
-  registerStripeWebhookRoutes(app);
+  // registerStripeWebhookRoutes(app); // DISABLED: using stripe-webhook-harness for debugging
   registerSubscriptionRoutes(app);
   
   // Register invoice payment routes

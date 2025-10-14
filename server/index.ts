@@ -9,7 +9,7 @@ import { passwordGateMiddleware, handlePasswordGate } from "./middleware/passwor
 import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
 import version from "./version.json";
-import { stripeWebhookRaw } from "./stripe-webhook-raw";
+import { mountStripeHarness } from "./stripe-webhook-harness";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -27,8 +27,8 @@ if (process.env.SENTRY_DSN) {
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
 
-// ===== STRIPE WEBHOOK MUST BE FIRST - RAW BODY REQUIRED =====
-app.use('/stripe', stripeWebhookRaw);
+// ===== STRIPE VERIFICATION HARNESS - MOUNT FIRST =====
+mountStripeHarness(app);
 
 // ===== GLOBAL PARSERS THAT CAPTURE RAW BYTES =====
 // Augment Express Request to carry rawBody
@@ -487,6 +487,25 @@ try {
   const { createServer } = await import('node:http');
   server = createServer(app);
 }
+
+  // DEBUG: print effective routes at startup
+  function listRoutes(app: any) {
+    const routes: string[] = [];
+    app._router?.stack?.forEach((l: any) => {
+      if (l.route?.path) {
+        routes.push(`${Object.keys(l.route.methods).join(",").toUpperCase()} ${l.route.path}`);
+      }
+      if (l.name === "router" && l.handle?.stack) {
+        l.handle.stack.forEach((h: any) => {
+          if (h.route?.path) {
+            routes.push(`${Object.keys(h.route.methods).join(",").toUpperCase()} ${h.route.path}`);
+          }
+        });
+      }
+    });
+    console.log("[ROUTES]", routes.slice(0, 20)); // Show first 20 routes to avoid spam
+  }
+  listRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
