@@ -28,7 +28,7 @@ if (process.env.SENTRY_DSN) {
 // app.use(domainRedirectMiddleware);
 
 // ===== STRIPE WEBHOOK MUST BE FIRST - RAW BODY REQUIRED =====
-app.use('/api', stripeWebhookRaw);
+app.use('/stripe', stripeWebhookRaw);
 
 // ===== GLOBAL PARSERS THAT CAPTURE RAW BYTES =====
 // Augment Express Request to carry rawBody
