@@ -14,11 +14,11 @@ export const stripeWebhookRaw = express.Router();
 
 /**
  * IMPORTANT
- * - Path MUST be /api/stripe/webhook (combined with app.use('/api', ...)).
+ * - Path MUST be /stripe/webhook (combined with app.use('/stripe', ...)).
  * - raw() ensures req.body is a Buffer on this route only.
  */
 stripeWebhookRaw.post(
-  "/stripe/webhook",
+  "/webhook",
   bodyParser.raw({ type: "application/json" }),
   async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"];
@@ -73,7 +73,7 @@ stripeWebhookRaw.post(
 );
 
 // Simple ping test route to verify API is reachable  
-stripeWebhookRaw.get("/webhook/ping", (req: Request, res: Response) => {
+stripeWebhookRaw.get("/ping", (req: Request, res: Response) => {
   res.json({ 
     ok: true, 
     verifyDisabled: STRIPE_VERIFY_DISABLED || false,
