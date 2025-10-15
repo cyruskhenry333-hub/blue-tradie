@@ -24,11 +24,11 @@ if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
 
+// ===== STRIPE VERIFICATION HARNESS - MOUNT FIRST (before ANY other middleware) =====
+mountStripeHarness(app);
+
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
-
-// ===== STRIPE VERIFICATION HARNESS - MOUNT FIRST =====
-mountStripeHarness(app);
 
 // ===== GLOBAL PARSERS THAT CAPTURE RAW BYTES =====
 // Augment Express Request to carry rawBody
