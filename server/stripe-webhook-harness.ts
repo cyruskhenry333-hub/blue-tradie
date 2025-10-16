@@ -34,7 +34,7 @@ export function mountStripeHarness(app: express.Express) {
 
   // THE webhook: raw body, loud logs, bypass flag
   app.post(
-    "/api/stripe/webhook",
+    "/api/stripe/webhook-harness",
     bodyParser.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
       res.setHeader("x-stripe-verify-disabled", String(STRIPE_VERIFY_DISABLED));
