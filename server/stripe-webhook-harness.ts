@@ -34,7 +34,7 @@ export function mountStripeHarness(app: express.Express) {
 
   // THE webhook: raw body, loud logs, bypass flag
   app.post(
-    "/api/stripe/webhook",
+    "/api/stripe/webhook-harness",
     bodyParser.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
       res.setHeader("x-stripe-verify-disabled", String(STRIPE_VERIFY_DISABLED));
@@ -70,7 +70,68 @@ export function mountStripeHarness(app: express.Express) {
           STRIPE_WEBHOOK_SECRET
         );
         console.log("[STRIPE OK]", { type: event.type });
-        // Minimal handling only; business logic not required for this proof
+        
+        // Handle checkout completion with user creation and email
+        if (event.type === 'checkout.session.completed') {
+          const session = event.data.object as any;
+          const metadata = session.metadata;
+          
+          if (metadata && metadata.email) {
+            try {
+              // Create user account
+              const { storage } = await import('./storage');
+              const user = await storage.upsertUser({
+                id: metadata.userId,
+                email: metadata.email,
+                firstName: metadata.firstName,
+                lastName: metadata.lastName,
+                businessName: metadata.businessName,
+                trade: metadata.trade,
+                serviceArea: metadata.serviceArea,
+                country: metadata.country,
+                isGstRegistered: metadata.isGstRegistered === 'true',
+                isOnboarded: true,
+                isFreeTrialUser: true,
+                freeTrialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                stripeCustomerId: session.customer,
+                subscriptionTier: metadata.plan === 'teams' ? 'Blue Teams' : 'Blue Core',
+              });
+              
+              console.log(`✅ User created: ${user.email}`);
+              
+              // Send welcome email with magic link
+              const { authService } = await import('./services/auth-service');
+              const { emailServiceWrapper } = await import('./services/email-service-wrapper');
+              
+              const { token } = await authService.createMagicLinkToken(
+                metadata.email,
+                metadata.userId,
+                'stripe-webhook',
+                'stripe-checkout'
+              );
+              
+              const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
+              const loginUrl = `${appUrl}/auth/verify?token=${token}`;
+              
+              const emailSent = await emailServiceWrapper.sendWelcomeWithMagicLink(
+                metadata.email,
+                metadata.firstName,
+                metadata.plan,
+                loginUrl
+              );
+              
+              if (emailSent) {
+                console.log(`📧 Welcome email sent to: ${metadata.email}`);
+              } else {
+                console.error(`❌ Failed to send welcome email to: ${metadata.email}`);
+              }
+              
+            } catch (error) {
+              console.error('❌ Error processing checkout:', error);
+            }
+          }
+        }
+        
         return res.status(200).send("ok");
       } catch (err: any) {
         console.error("❌ Stripe verification failed:", err?.message);
