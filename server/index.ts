@@ -9,6 +9,7 @@ import { passwordGateMiddleware, handlePasswordGate } from "./middleware/passwor
 import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
 import version from "./version.json";
+import { mountStripeHarness } from "./stripe-webhook-harness";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -18,17 +19,38 @@ const app = express();
 // Trust proxy for secure cookies behind proxy
 app.set('trust proxy', 1);
 
-// Sentry request handler must be the first middleware (only if Sentry is initialized)
+// Sentry request handler 
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
 
+// ===== STRIPE VERIFICATION HARNESS - MOUNT FIRST (before ANY other middleware) =====
+mountStripeHarness(app);
+
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
 
-// Increase payload limits for file uploads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+// ===== GLOBAL PARSERS THAT CAPTURE RAW BYTES =====
+// Augment Express Request to carry rawBody
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
+  }
+}
+
+// Capture raw bytes for ANY incoming request before JSON/urlencoded parsing mutates req.body
+const captureRaw = (req: any, _res: any, buf: Buffer) => {
+  // Only keep for JSON requests (Stripe sends application/json)
+  if (req.headers["content-type"]?.startsWith("application/json")) {
+    req.rawBody = Buffer.from(buf);
+  }
+};
+
+// Register parsers with verify hooks to capture raw buffer
+app.use(express.json({ verify: captureRaw, limit: '10mb' }));
+app.use(express.urlencoded({ verify: captureRaw, extended: false, limit: '10mb' }));
 
 // Note: Demo routes will be added after session setup
 
@@ -465,6 +487,25 @@ try {
   const { createServer } = await import('node:http');
   server = createServer(app);
 }
+
+  // DEBUG: print effective routes at startup
+  function listRoutes(app: any) {
+    const routes: string[] = [];
+    app._router?.stack?.forEach((l: any) => {
+      if (l.route?.path) {
+        routes.push(`${Object.keys(l.route.methods).join(",").toUpperCase()} ${l.route.path}`);
+      }
+      if (l.name === "router" && l.handle?.stack) {
+        l.handle.stack.forEach((h: any) => {
+          if (h.route?.path) {
+            routes.push(`${Object.keys(h.route.methods).join(",").toUpperCase()} ${h.route.path}`);
+          }
+        });
+      }
+    });
+    console.log("[ROUTES]", routes.slice(0, 20)); // Show first 20 routes to avoid spam
+  }
+  listRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
