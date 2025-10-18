@@ -10,6 +10,8 @@ const STRIPE_VERIFY_DISABLED =
 const stripe = new Stripe(STRIPE_SECRET_KEY || "sk_dummy", { apiVersion: "2024-06-20" });
 
 export function mountStripeHarness(app: express.Express) {
+  console.log("[HARNESS] mountStripeHarness called - registering routes");
+  
   // Health: proves correct process + env
   app.get("/healthz", (_req, res) => {
     res.setHeader("x-svc", "api");
