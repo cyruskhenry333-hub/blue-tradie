@@ -9,7 +9,7 @@ import { passwordGateMiddleware, handlePasswordGate } from "./middleware/passwor
 import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
 import version from "./version.json";
-import { mountStripeHarness } from "./stripe-webhook-harness";
+import { mountStripeWebhook } from "./stripe-webhook";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -24,8 +24,8 @@ if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
 
-// ===== STRIPE VERIFICATION HARNESS - MOUNT FIRST (before ANY other middleware) =====
-mountStripeHarness(app);
+// ===== STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====
+mountStripeWebhook(app);
 
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
@@ -503,9 +503,20 @@ try {
         });
       }
     });
-    console.log("[ROUTES]", routes.slice(0, 20)); // Show first 20 routes to avoid spam
+    
+    // Show all webhook routes specifically
+    const webhookRoutes = routes.filter(r => r.includes('/stripe/webhook'));
+    console.log("[ROUTES]", webhookRoutes.length > 0 ? webhookRoutes : routes.slice(0, 20));
   }
   listRoutes(app);
+
+  // Stripe configuration logging
+  const whsec = process.env.STRIPE_WEBHOOK_SECRET || "";
+  const verifyDisabled = (process.env.STRIPE_VERIFY_DISABLED || "").toLowerCase() === "true";
+  console.log("[STRIPE CONFIG]", {
+    verifyDisabled,
+    whsecPrefix: whsec ? whsec.substring(0, 8) + "..." : "MISSING"
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
