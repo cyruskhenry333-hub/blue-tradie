@@ -171,12 +171,12 @@ async function sendWelcomeEmailWithRetries(metadata: any, session: Stripe.Checko
       const { token } = await authService.createMagicLinkToken(
         metadata.email,
         metadata.userId,
-        'stripe-webhook',
-        'stripe-checkout'
+        'stripe-checkout',
+        '/onboarding'
       );
       
       const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
-      const loginUrl = `${appUrl}/auth/verify?token=${token}`;
+      const loginUrl = `${appUrl}/auth/verify?token=${encodeURIComponent(token)}`;
       
       const emailSent = await emailServiceWrapper.sendWelcomeWithMagicLink(
         metadata.email,

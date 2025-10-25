@@ -185,17 +185,18 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
         return res.json(successResponse);
       }
       
-      // Create magic link token
+      // Create magic link token with appropriate redirect
+      const redirect = user.isOnboarded ? '/dashboard' : '/onboarding';
       const { token } = await authService.createMagicLinkToken(
         email, 
         user.id, 
-        ipAddress, 
-        userAgent
+        'login',
+        redirect
       );
       
       // Send magic link email
       const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
-      const loginUrl = `${appUrl}/auth/verify?token=${token}`;
+      const loginUrl = `${appUrl}/auth/verify?token=${encodeURIComponent(token)}`;
       
       const emailSent = await emailServiceWrapper.sendMagicLink(
         email, 
@@ -212,51 +213,6 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error('[AUTH] Magic link request error:', error);
       res.status(500).json({ message: 'Failed to process request' });
-    }
-  });
-  
-  // Verify magic link and create session
-  app.get('/auth/verify', async (req, res) => {
-    try {
-      const { token } = req.query;
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const userAgent = req.get('User-Agent');
-      
-      if (!token || typeof token !== 'string') {
-        return res.redirect('/login?error=invalid_link');
-      }
-      
-      // Verify and consume the magic link token
-      const magicToken = await authService.verifyAndConsumeMagicLinkToken(token);
-      
-      if (!magicToken) {
-        return res.redirect('/login?error=expired_link');
-      }
-      
-      // Get user (should exist since we stored userId with token)
-      const user = magicToken.userId ? await authService.getUserByEmail(magicToken.email) : null;
-      
-      if (!user) {
-        return res.redirect('/login?error=user_not_found');
-      }
-      
-      // Create auth session
-      const session = await authService.createSession(user.id, ipAddress, userAgent);
-      
-      // Set secure cookie
-      const cookieName = authService.getSessionCookieName();
-      const cookieOptions = authService.getSessionCookieOptions();
-      res.cookie(cookieName, session.id, cookieOptions);
-      
-      // Redirect to dashboard or continue URL
-      const continueUrl = req.query.continue as string;
-      const redirectUrl = continueUrl && continueUrl.startsWith('/') ? continueUrl : '/dashboard';
-      
-      res.redirect(redirectUrl);
-      
-    } catch (error) {
-      console.error('[AUTH] Magic link verification error:', error);
-      res.redirect('/login?error=verification_failed');
     }
   });
   

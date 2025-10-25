@@ -10,22 +10,24 @@ import { addStandaloneEmailTestRoutes } from "./email-test-standalone";
 import { initSentry, Sentry } from "./sentry";
 import version from "./version.json";
 import { mountStripeWebhook } from "./stripe-webhook";
+import { mountSession } from "./session";
+import authVerifyRouter from "./routes/auth-verify";
 
 // Initialize Sentry before everything else
 initSentry();
 
 const app = express();
 
-// Trust proxy for secure cookies behind proxy
-app.set('trust proxy', 1);
+// ===== STEP 1: STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====
+mountStripeWebhook(app);
+
+// ===== STEP 2: SESSION SETUP =====
+mountSession(app);
 
 // Sentry request handler 
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
-
-// ===== STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====
-mountStripeWebhook(app);
 
 // Domain redirect middleware temporarily disabled for troubleshooting
 // app.use(domainRedirectMiddleware);
@@ -91,6 +93,24 @@ app.use((req, res, next) => {
   // Add SendGrid debug route
   const sendgridDebug = await import('./routes/sendgrid-debug');
   app.use('/debug/sendgrid', sendgridDebug.default);
+
+  // ===== AUTH VERIFY ROUTE =====
+  app.use('/', authVerifyRouter);
+
+  // ===== TEMPORARY DEBUG ROUTE =====
+  app.get('/api/auth/debug-session', (req, res) => {
+    const cookieNames = Object.keys(req.cookies || {});
+    const session = req.session as any;
+    res.json({
+      cookieNames,
+      session: {
+        userId: session?.userId,
+        email: session?.email,
+        passwordAuthenticated: session?.passwordAuthenticated,
+        keys: Object.keys(session || {})
+      }
+    });
+  });
   
   // Setup simple auth for beta testing
   setupSimpleAuth(app);

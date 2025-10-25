@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from 'crypto';
 import { nanoid } from 'nanoid';
 import { eq, and, lt, isNull, gt } from 'drizzle-orm';
+import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { authSessions, magicLinkTokens, users } from '../../shared/schema';
 import type { AuthSession, MagicLinkToken, InsertAuthSession, InsertMagicLinkToken } from '../../shared/schema';
@@ -8,6 +9,7 @@ import type { AuthSession, MagicLinkToken, InsertAuthSession, InsertMagicLinkTok
 const SESSION_TTL_DAYS = parseInt(process.env.SESSION_TTL_DAYS || '30');
 const MAGIC_LINK_TTL_MINUTES = parseInt(process.env.MAGIC_LINK_TTL_MINUTES || '15');
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'bt_sess';
+const MAGIC_LINK_JWT_SECRET = process.env.MAGIC_LINK_JWT_SECRET || process.env.SESSION_SECRET || 'fallback-jwt-secret';
 
 export class AuthService {
   
@@ -67,24 +69,33 @@ export class AuthService {
   async createMagicLinkToken(
     email: string, 
     userId?: string, 
-    ipAddress?: string, 
-    userAgent?: string
+    from: string = 'login',
+    redirect: string = '/dashboard'
   ): Promise<{ token: string; tokenId: string }> {
-    // Generate a secure random token
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = createHash('sha256').update(token).digest('hex');
     const tokenId = nanoid();
     const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MINUTES * 60 * 1000);
     
+    // Create JWT token with claims
+    const payload = {
+      userId,
+      email: email.toLowerCase(),
+      from,
+      redirect,
+      tokenId,
+      exp: Math.floor(expiresAt.getTime() / 1000), // JWT expects seconds
+      iat: Math.floor(Date.now() / 1000)
+    };
+    
+    const token = jwt.sign(payload, MAGIC_LINK_JWT_SECRET);
+    
+    // Store minimal record in database for tracking
     await db.insert(magicLinkTokens).values({
       id: tokenId,
       email: email.toLowerCase(),
       userId,
-      tokenHash,
-      purpose: 'login',
+      tokenHash: tokenId, // Use tokenId as hash for JWT-based tokens
+      purpose: from,
       expiresAt,
-      ipAddress,
-      userAgent,
     });
     
     return { token, tokenId };
