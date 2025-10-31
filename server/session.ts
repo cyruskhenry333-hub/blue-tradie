@@ -10,7 +10,8 @@ export function mountSession(app: express.Express) {
   console.log('[AUTH CONFIG]', {
     cookieName: SESSION_COOKIE_NAME,
     domain: SESSION_DOMAIN,
-    sameSite: 'lax'
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
   });
 
   // Trust proxy for secure cookies behind proxy

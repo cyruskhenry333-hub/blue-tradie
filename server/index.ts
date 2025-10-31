@@ -12,6 +12,8 @@ import version from "./version.json";
 import { mountStripeWebhook } from "./stripe-webhook";
 import { mountSession } from "./session";
 import authVerifyRouter from "./routes/auth-verify";
+import { authUserRouter } from "./routes/auth-user";
+import { onboardingRouter } from "./routes/onboarding";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -94,8 +96,10 @@ app.use((req, res, next) => {
   const sendgridDebug = await import('./routes/sendgrid-debug');
   app.use('/debug/sendgrid', sendgridDebug.default);
 
-  // ===== AUTH VERIFY ROUTE =====
+  // ===== AUTH ROUTES =====
   app.use('/', authVerifyRouter);
+  app.use('/', authUserRouter);
+  app.use('/', onboardingRouter);
 
   // ===== TEMPORARY DEBUG ROUTE =====
   app.get('/api/auth/debug-session', (req, res) => {
@@ -107,9 +111,19 @@ app.use((req, res, next) => {
         userId: session?.userId,
         email: session?.email,
         passwordAuthenticated: session?.passwordAuthenticated,
+        isOnboarded: session?.isOnboarded,
         keys: Object.keys(session || {})
       }
     });
+  });
+
+  // ===== LOGIN REDIRECT LOGIC =====
+  app.get('/login', (req, res, next) => {
+    const sess: any = (req as any).session;
+    if (sess?.userId && sess?.passwordAuthenticated) {
+      return res.redirect(sess.isOnboarded ? '/dashboard' : '/onboarding');
+    }
+    return next(); // let frontend serve the login page
   });
   
   // Setup simple auth for beta testing
