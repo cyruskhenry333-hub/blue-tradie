@@ -81,23 +81,21 @@ export function serveStatic(app: Express) {
   // Authentication middleware
   async function requireAuth(req: any, res: any, next: any) {
     try {
-      // Import auth service dynamically
-      const { authService } = await import('./services/auth-service');
-      
-      // Check for session cookie
-      const cookieName = authService.getSessionCookieName();
-      const sessionId = req.cookies[cookieName];
-      
-      if (sessionId) {
-        const session = await authService.getValidSession(sessionId);
-        if (session) {
-          req.user = { id: session.userId };
-          return next();
-        }
+      const sess: any = req.session;
+      if (!sess) {
+        console.warn("[AUTH BLOCK] No session object", { path: req.path });
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = sess.userId;
+      const isPwd = Boolean(sess.passwordAuthenticated);
+      if (userId && isPwd) {
+        req.user = { id: userId };
+        return next();
       }
       
       // Check if user is in demo mode (existing demo system)
-      if (req.session?.mode === 'demo' && req.session?.testUser) {
+      if (sess?.mode === 'demo' && sess?.testUser) {
         return next();
       }
       

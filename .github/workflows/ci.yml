@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check for legacy auth patterns
+      run: |
+        echo "🔍 Checking for legacy auth patterns..."
+        if rg -n "requireAuth[34]|req\.cookies\.bt_sess" server/ --type ts; then
+          echo "❌ Legacy auth patterns found! Use session-based auth only."
+          exit 1
+        else
+          echo "✅ No legacy auth patterns detected"
+        fi
+    
+    - name: Type checking
+      run: npx tsc --noEmit
+    
+    - name: Run tests
+      run: npm test
+      env:
+        NODE_ENV: test
+        SESSION_SECRET: test-session-secret
+        MAGIC_LINK_JWT_SECRET: test-jwt-secret
+    
+    - name: Build check
+      run: npm run build

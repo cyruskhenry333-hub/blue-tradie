@@ -45,6 +45,17 @@ authVerifyRouter.get("/auth/verify", async (req: Request, res: Response) => {
     sess.passwordAuthenticated = true;
     sess.isOnboarded = Boolean(user.isOnboarded);
 
+    // Check if this is first login and set welcome tour flag
+    if (!user.firstLoginAt) {
+      try {
+        await storage.updateUser(user.id, { firstLoginAt: new Date() });
+        sess.firstLogin = true;
+        console.log(`[VERIFY] First login detected for user ${user.id}`);
+      } catch (error) {
+        console.error(`[VERIFY] Failed to update firstLoginAt:`, error);
+      }
+    }
+
     const redirect =
       payload.redirect ||
       (sess.isOnboarded ? "/dashboard" : "/onboarding") ||
@@ -54,13 +65,14 @@ authVerifyRouter.get("/auth/verify", async (req: Request, res: Response) => {
     sess.save((err: unknown) => {
       if (err) {
         console.error("[VERIFY] session.save error:", err);
-        return res.redirect("/login");
+        return res.redirect("/login?error=session_failed");
       }
       console.log("[VERIFY OK]", {
         userId: payload.userId,
         email: payload.email,
         isOnboarded: sess.isOnboarded,
         redirect,
+        sessionKeys: Object.keys(sess)
       });
       return res.redirect(redirect);
     });
