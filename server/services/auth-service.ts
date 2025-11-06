@@ -101,15 +101,13 @@ export class AuthService {
     return { token, tokenId };
   }
   
-  async verifyAndConsumeMagicLinkToken(token: string): Promise<MagicLinkToken | null> {
-    const tokenHash = createHash('sha256').update(token).digest('hex');
-    
-    // Find valid, unconsumed token
+  async verifyAndConsumeMagicLinkToken(tokenId: string): Promise<MagicLinkToken | null> {
+    // Find valid, unconsumed token by tokenId (not hash since we're using JWT)
     const [magicToken] = await db.select()
       .from(magicLinkTokens)
       .where(
         and(
-          eq(magicLinkTokens.tokenHash, tokenHash),
+          eq(magicLinkTokens.id, tokenId),
           isNull(magicLinkTokens.consumedAt),
           gt(magicLinkTokens.expiresAt, new Date())
         )
@@ -120,7 +118,7 @@ export class AuthService {
       return null;
     }
     
-    // Mark token as consumed
+    // Mark token as consumed (single-use enforcement)
     await db.update(magicLinkTokens)
       .set({ consumedAt: new Date() })
       .where(eq(magicLinkTokens.id, magicToken.id));

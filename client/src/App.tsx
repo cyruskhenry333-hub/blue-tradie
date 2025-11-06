@@ -17,6 +17,7 @@ import BetaSignup from "@/pages/beta-signup";
 import ThreeTierBetaSignup from "@/components/ThreeTierBetaSignup";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminRoadmap from "@/pages/admin-roadmap";
+import AdminUsers from "@/pages/admin-users";
 import PublicRoadmap from "@/pages/public-roadmap";
 import Profile from "@/pages/profile";
 import GoalsOnboarding from "@/pages/goals-onboarding";
@@ -134,6 +135,7 @@ function Router() {
                 <Route path="/subscribe" component={Subscribe} />
                 <Route path="/admin" component={AdminAnalytics} />
                 <Route path="/admin/roadmap" component={AdminRoadmap} />
+                <Route path="/admin/users" component={AdminUsers} />
                 <Route path="/admin-usage" component={AdminUsagePage} />
                 <Route path="/roadmap" component={PublicRoadmap} />
                 <Route path="/migration" component={Migration} />

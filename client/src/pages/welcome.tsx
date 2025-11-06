@@ -31,11 +31,13 @@ export default function Welcome() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-tradie-light to-white flex items-center justify-center">
         <div className="text-center">
-          <img 
-            src={blueTradieLogo} 
-            alt="Blue Tradie Logo" 
-            className="h-20 w-20 mx-auto mb-6"
-          />
+          <Link href="/dashboard">
+            <img 
+              src={blueTradieLogo} 
+              alt="Blue Tradie Logo" 
+              className="h-20 w-20 mx-auto mb-6 cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          </Link>
           <div className="flex items-center gap-2 text-xl font-semibold text-tradie-blue mb-4">
             <Loader2 className="h-6 w-6 animate-spin" />
             Setting up your account...
@@ -71,14 +73,16 @@ export default function Welcome() {
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-center">
-            <div className="flex items-center space-x-2">
-              <img 
-                src={blueTradieLogo} 
-                alt="Blue Tradie Logo" 
-                className="h-16 w-16 object-contain"
-              />
-              <span className="text-2xl font-bold text-tradie-blue">Blue Tradie</span>
-            </div>
+            <Link href="/dashboard">
+              <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity">
+                <img 
+                  src={blueTradieLogo} 
+                  alt="Blue Tradie Logo" 
+                  className="h-16 w-16 object-contain"
+                />
+                <span className="text-2xl font-bold text-tradie-blue">Blue Tradie</span>
+              </div>
+            </Link>
           </div>
         </div>
       </header>

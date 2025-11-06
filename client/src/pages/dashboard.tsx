@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Link } from "wouter";
 import WelcomeOnboarding from "@/components/welcome-onboarding";
-// TODO: Beta removed - BetaTipBanner import removed
 import { getRegionalGreeting } from "@/utils/language-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,6 @@ import DashboardMetrics from "@/components/dashboard-metrics";
 import EnhancedChatUI from "@/components/enhanced-chat-ui";
 import WeeklySummary from "@/components/weekly-summary";
 import FeedbackWidget from "@/components/feedback-widget";
-import TokenUsageTracker from "@/components/token-usage-tracker";
 
 import BusinessJourneyRoadmap from "@/components/business-journey-roadmap";
 import DashboardGoalsVision from "@/components/DashboardGoalsVision";
@@ -88,15 +86,19 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {user?.businessLogo && user?.businessName ? (
-                <div className="w-16 h-16 md:w-18 md:h-18 bg-tradie-blue rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{user.businessName.slice(0, 2).toUpperCase()}</span>
-                </div>
+                <Link href="/dashboard">
+                  <div className="w-16 h-16 md:w-18 md:h-18 bg-tradie-blue rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                    <span className="text-white font-bold text-lg">{user.businessName.slice(0, 2).toUpperCase()}</span>
+                  </div>
+                </Link>
               ) : (
-                <img 
-                  src={blueTradieLogo} 
-                  alt="Blue Tradie Logo" 
-                  className="h-16 w-16 md:h-18 md:w-18 object-contain"
-                />
+                <Link href="/dashboard">
+                  <img 
+                    src={blueTradieLogo} 
+                    alt="Blue Tradie Logo" 
+                    className="h-16 w-16 md:h-18 md:w-18 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </Link>
               )}
               <div>
                 <h1 className="text-2xl font-bold text-tradie-blue">
@@ -115,7 +117,6 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-3">
-              <TokenUsageTracker showMini={true} />
               <Button 
                 variant="outline" 
                 size="sm" 

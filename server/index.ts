@@ -14,6 +14,7 @@ import { mountSession } from "./session";
 import authVerifyRouter from "./routes/auth-verify";
 import { authUserRouter } from "./routes/auth-user";
 import { onboardingRouter } from "./routes/onboarding";
+import { adminUsersRouter } from "./routes/admin-users";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -100,6 +101,7 @@ app.use((req, res, next) => {
   app.use('/', authVerifyRouter);
   app.use('/', authUserRouter);
   app.use('/', onboardingRouter);
+  app.use('/', adminUsersRouter);
 
   // ===== TEMPORARY DEBUG ROUTE =====
   app.get('/api/auth/debug-session', (req, res) => {
@@ -166,37 +168,38 @@ app.use((req, res, next) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blue Tradie - Demo Login</title>
+    <title>Blue Tradie - Login</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 50px; margin: 0; }
         .login-box { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { color: #1e40af; text-align: center; margin-bottom: 30px; }
-        h2 { color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 18px; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
         button { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
         button:hover { background: #2563eb; }
-        .demo-button { background: #16a34a; }
-        .demo-button:hover { background: #15803d; }
-        .info { text-align: center; color: #666; font-size: 14px; margin-top: 20px; }
-        .divider { border-top: 1px solid #e5e7eb; margin: 30px 0; text-align: center; position: relative; }
-        .divider::after { content: "OR"; background: white; padding: 0 15px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #666; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .info { text-align: center; color: #666; font-size: 14px; margin-top: 20px; line-height: 1.4; }
         .error { background: #fee; border: 1px solid #fcc; color: #c66; padding: 10px; border-radius: 6px; margin-bottom: 20px; }
         .success { background: #efe; border: 1px solid #cfc; color: #6c6; padding: 10px; border-radius: 6px; margin-bottom: 20px; }
+        .footer-links { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+        .footer-links a { color: #3b82f6; text-decoration: none; margin: 0 10px; font-size: 14px; }
+        .footer-links a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="login-box">
-        <h1>Blue Tradie Demo</h1>
+        <h1><a href="/dashboard" style="text-decoration: none; color: inherit; cursor: pointer;">Blue Tradie</a></h1>
         
         <script>
         // Show error messages from URL params
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
         const errorMessages = {
-          'invalid_link': 'Invalid login link. Please request a new one.',
-          'expired_link': 'Login link has expired. Please request a new one.',
-          'user_not_found': 'Account not found. Please sign up first.',
-          'verification_failed': 'Login verification failed. Please try again.'
+          'missing_token': 'Login link is missing. Please request a new one.',
+          'invalid_token': 'Invalid login link. Please request a new one.',
+          'invalid_or_expired_token': 'Login link has expired or been used. Please request a new one.',
+          'user_not_found': 'Account not found. Please check your email or sign up.',
+          'session_error': 'Session error occurred. Please try again.',
+          'session_failed': 'Failed to create session. Please try again.'
         };
         
         if (error && errorMessages[error]) {
@@ -204,67 +207,28 @@ app.use((req, res, next) => {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error';
             errorDiv.textContent = errorMessages[error];
-            document.querySelector('.login-box').appendChild(errorDiv);
+            document.querySelector('.login-box').insertBefore(errorDiv, document.querySelector('form'));
           });
         }
         </script>
         
-        <h2>Customer Login</h2>
         <form method="POST" action="/api/auth/request-login" onsubmit="handleMagicLinkSubmit(event)">
-            <input type="email" name="email" placeholder="Your email address" required>
-            <button type="submit" class="demo-button">Send Login Link</button>
-        </form>
-        
-        <div class="divider"></div>
-        
-        <h2>Demo Login</h2>
-        <form method="POST" action="/test-login">
-            <input type="text" name="username" placeholder="Username" value="cy" required>
-            <input type="password" name="password" placeholder="Password" value="vip13" required>
-            <button type="submit">Login to Blue Tradie Demo</button>
-        </form>
-        
-        <div class="divider"></div>
-        
-        <h2>Demo Token Access</h2>
-        <form method="POST" action="/auth/demo/verify" onsubmit="handleDemoSubmit(event)">
-            <input type="text" name="code" placeholder="Paste demo code here" required>
-            <button type="submit" class="demo-button">Verify Demo Code</button>
+            <input type="email" name="email" placeholder="Enter your email address" required>
+            <button type="submit">Send Login Link</button>
         </form>
         
         <div class="info">
-            <strong>VIP Demo Account</strong><br>
-            Australian Electrician with 200 AI tokens<br>
-            Full platform access for testing<br><br>
-            <strong>Demo Codes:</strong> DEMO2024, PREVIEW123, TEST456<br>
-            <a href="/debug/session" target="_blank" style="color: #3b82f6;">Debug Session</a>
+            We'll send a secure login link to your email.<br>
+            No passwords required!
+        </div>
+        
+        <div class="footer-links">
+            <a href="/">← Back to Home</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
         </div>
         
         <script>
-        async function handleDemoSubmit(event) {
-          event.preventDefault();
-          const form = event.target;
-          const formData = new FormData(form);
-          
-          try {
-            const response = await fetch('/auth/demo/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code: formData.get('code') })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-              window.location.href = result.redirectTo || '/onboarding';
-            } else {
-              alert('Invalid demo code: ' + (result.error || 'Unknown error'));
-            }
-          } catch (error) {
-            alert('Demo verification failed: ' + error.message);
-          }
-        }
-        
         async function handleMagicLinkSubmit(event) {
           event.preventDefault();
           const form = event.target;
@@ -284,13 +248,25 @@ app.use((req, res, next) => {
             const result = await response.json();
             
             if (response.ok) {
-              alert('Login link sent to your email! Check your inbox.');
+              // Show success message
+              const successDiv = document.createElement('div');
+              successDiv.className = 'success';
+              successDiv.textContent = 'Login link sent! Check your email and click the link to sign in.';
+              form.parentNode.insertBefore(successDiv, form);
               form.email.value = '';
             } else {
-              alert(result.message || 'Failed to send login link');
+              // Show error message
+              const errorDiv = document.createElement('div');
+              errorDiv.className = 'error';
+              errorDiv.textContent = result.message || 'Failed to send login link. Please try again.';
+              form.parentNode.insertBefore(errorDiv, form);
             }
           } catch (error) {
-            alert('Failed to send login link: ' + error.message);
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = 'Network error. Please check your connection and try again.';
+            form.parentNode.insertBefore(errorDiv, form);
           } finally {
             button.disabled = false;
             button.textContent = 'Send Login Link';

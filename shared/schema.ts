@@ -186,6 +186,10 @@ export const users = pgTable("users", {
   fromName: varchar("from_name"),
   currencyCode: varchar("currency_code").default("AUD"),
   
+  // Email tracking
+  welcomeSentAt: timestamp("welcome_sent_at"),
+  firstLoginAt: timestamp("first_login_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

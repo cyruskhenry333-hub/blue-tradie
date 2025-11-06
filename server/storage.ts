@@ -30,7 +30,7 @@ import {
   type InsertPublicWaitlist,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, lt, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, lt, sql, like, count } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -223,6 +223,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async getAllUsers(options: { offset: number; limit: number; search: string }): Promise<User[]> {
+    let query = db.select().from(users);
+    
+    if (options.search) {
+      query = query.where(
+        sql`${users.email} ILIKE ${`%${options.search}%`} OR ${users.firstName} ILIKE ${`%${options.search}%`} OR ${users.lastName} ILIKE ${`%${options.search}%`} OR ${users.businessName} ILIKE ${`%${options.search}%`}`
+      );
+    }
+    
+    return query.offset(options.offset).limit(options.limit).orderBy(desc(users.createdAt));
+  }
+
+  async getUserCount(search: string): Promise<number> {
+    let query = db.select({ count: count() }).from(users);
+    
+    if (search) {
+      query = query.where(
+        sql`${users.email} ILIKE ${`%${search}%`} OR ${users.firstName} ILIKE ${`%${search}%`} OR ${users.lastName} ILIKE ${`%${search}%`} OR ${users.businessName} ILIKE ${`%${search}%`}`
+      );
+    }
+    
+    const [result] = await query;
+    return result.count;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    // Delete user and cascade delete related data
+    // Note: In a real production app, you might want to soft delete or archive instead
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   // Job operations

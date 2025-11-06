@@ -132,7 +132,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
     console.log("🚀 Creating user from checkout:", metadata.email);
 
-    // Create user account
+    // Create user account (upsert handles duplicates)
     const { storage } = await import('./storage');
     const user = await storage.upsertUser({
       id: metadata.userId,
@@ -153,8 +153,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     
     console.log(`✅ User created: ${user.email}`);
     
-    // Send welcome email with retries
-    await sendWelcomeEmailWithRetries(metadata, session);
+    // Check if welcome email already sent (prevent duplicates)
+    if (!user.welcomeSentAt) {
+      await sendWelcomeEmailWithRetries(metadata, session);
+      
+      // Mark welcome email as sent
+      await storage.updateUser(user.id, { 
+        welcomeSentAt: new Date() 
+      });
+      console.log(`📧 Welcome email sent to: ${metadata.email}`);
+    } else {
+      console.log(`📧 Welcome email already sent to: ${metadata.email}, skipping`);
+    }
     
   } catch (error) {
     console.error('❌ Error processing checkout:', error);
@@ -165,28 +175,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function sendWelcomeEmailWithRetries(metadata: any, session: Stripe.Checkout.Session, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const { authService } = await import('./services/auth-service');
       const { emailServiceWrapper } = await import('./services/email-service-wrapper');
       
-      const { token } = await authService.createMagicLinkToken(
-        metadata.email,
-        metadata.userId,
-        'stripe-checkout',
-        '/onboarding'
-      );
-      
-      const appUrl = process.env.APP_BASE_URL || process.env.APP_URL || 'https://bluetradie.com';
-      const loginUrl = `${appUrl}/auth/verify?token=${encodeURIComponent(token)}`;
-      
-      const emailSent = await emailServiceWrapper.sendWelcomeWithMagicLink(
+      // Send welcome email only (no magic link - user will request login separately)
+      const emailSent = await emailServiceWrapper.sendWelcomeEmail(
         metadata.email,
         metadata.firstName,
-        metadata.plan,
-        loginUrl
+        metadata.plan || 'pro'
       );
       
       if (emailSent) {
-        console.log(`📧 Welcome email sent to: ${metadata.email}`);
         return;
       } else {
         throw new Error('Email service returned false');

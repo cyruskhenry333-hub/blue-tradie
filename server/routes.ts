@@ -216,7 +216,7 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Logout route
+  // Logout route - redirects to homepage with toast
   app.post('/api/auth/logout', async (req, res) => {
     try {
       const cookieName = authService.getSessionCookieName();
@@ -228,11 +228,13 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
       
       // Clear cookie
       res.clearCookie(cookieName, authService.getSessionCookieOptions());
-      res.json({ message: 'Logged out successfully' });
+      
+      // Redirect to homepage with logged out parameter for toast
+      res.redirect('/?logged_out=1');
       
     } catch (error) {
       console.error('[AUTH] Logout error:', error);
-      res.status(500).json({ message: 'Failed to logout' });
+      res.redirect('/?logout_error=1');
     }
   });
 }
@@ -1407,13 +1409,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const invoiceId = parseInt(req.params.id);
       
-      // For demo users, just return success message
-      // In production, this would send actual emails
-      res.json({ 
-        success: true, 
-        message: "Invoice sending functionality is available for paid plans. Demo users can preview and download invoices.",
-        demoNote: "This feature requires a paid subscription for email delivery."
-      });
+      // Get user to check subscription status
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Allow invoice sending for trial and active subscriptions
+      const allowedStatuses = ['trialing', 'active'];
+      const subscriptionStatus = user.subscriptionStatus || 'trial'; // Default to trial for backwards compatibility
+      
+      if (allowedStatuses.includes(subscriptionStatus) || user.isFreeTrialUser) {
+        // Trial users can send invoices - this is a key feature during evaluation
+        res.json({ 
+          success: true, 
+          message: "Invoice sent successfully! Your customer will receive an email with payment instructions.",
+          trialNote: user.isFreeTrialUser ? "Sending invoices is included in your free trial. Upgrade to continue after trial expires." : null
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: "Invoice sending requires an active subscription. Please upgrade to send invoices.",
+          upgradeRequired: true
+        });
+      }
     } catch (error) {
       console.error("Error sending invoice:", error);
       res.status(500).json({ message: "Failed to send invoice" });
@@ -3403,6 +3422,81 @@ What would you like to know more about?`;
     } catch (error) {
       console.error("Trial duration update error:", error);
       res.status(500).json({ error: "Failed to update trial duration" });
+    }
+  });
+
+  // Admin: User management
+  app.get('/api/admin/users', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.email !== "admin@bluetradie.com") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const { page = 1, limit = 50, search = '' } = req.query;
+      const offset = (page - 1) * limit;
+      
+      // Get users with optional search filtering
+      const users = await storage.getAllUsers({
+        offset: parseInt(offset),
+        limit: parseInt(limit),
+        search: search.toString()
+      });
+      
+      // Get total count for pagination
+      const totalCount = await storage.getUserCount(search.toString());
+      
+      res.json({
+        users: users.map(u => ({
+          id: u.id,
+          email: u.email,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          businessName: u.businessName,
+          trade: u.trade,
+          country: u.country,
+          subscriptionTier: u.subscriptionTier,
+          subscriptionStatus: u.subscriptionStatus,
+          isOnboarded: u.isOnboarded,
+          createdAt: u.createdAt,
+          firstLoginAt: u.firstLoginAt,
+          welcomeSentAt: u.welcomeSentAt,
+          stripeCustomerId: u.stripeCustomerId ? '***' : null, // Hide sensitive data
+          stripeSubscriptionId: u.stripeSubscriptionId ? '***' : null
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit)
+        }
+      });
+    } catch (error) {
+      console.error("Admin users fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Delete user (for testing purposes)
+  app.delete('/api/admin/users/:userId', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.email !== "admin@bluetradie.com") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const { userId } = req.params;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+      
+      // Delete user and all related data
+      await storage.deleteUser(userId);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Admin user deletion error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 
