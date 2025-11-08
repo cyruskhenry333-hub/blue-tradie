@@ -13,7 +13,8 @@ import {
   Sparkles,
   Target,
   Compass,
-  FileSignature
+  FileSignature,
+  Calendar
 } from "lucide-react";
 
 export default function QuickAccessPanel() {
@@ -95,6 +96,15 @@ export default function QuickAccessPanel() {
       href: "/team",
       color: "bg-teal-500 hover:bg-teal-600",
       shortcut: "T"
+    },
+    {
+      id: "calendar",
+      title: "Calendar",
+      description: "Schedule and track events",
+      icon: Calendar,
+      href: "/calendar",
+      color: "bg-red-500 hover:bg-red-600",
+      shortcut: "C"
     }
   ];
 
