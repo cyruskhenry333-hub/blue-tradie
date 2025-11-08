@@ -461,6 +461,92 @@ export const teamInvitations = pgTable("team_invitations", {
   index("idx_team_invites_status").on(table.status),
 ]);
 
+// ========== CALENDAR & SCHEDULING ==========
+
+// Calendar events for job scheduling
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Event details
+  title: varchar("title").notNull(),
+  description: text("description"),
+  location: text("location"),
+
+  // Timing
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  allDay: boolean("all_day").default(false),
+  timezone: varchar("timezone").default("Australia/Sydney"),
+
+  // Links to business data
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  customerId: varchar("customer_id"),
+  customerName: varchar("customer_name"),
+
+  // Event type and status
+  eventType: varchar("event_type").default("job"), // job, meeting, appointment, reminder, block_time
+  status: varchar("status").default("scheduled"), // scheduled, in_progress, completed, cancelled
+  color: varchar("color").default("#3b82f6"), // Hex color for calendar display
+
+  // Recurring events
+  isRecurring: boolean("is_recurring").default(false),
+  recurrenceRule: text("recurrence_rule"), // iCal RRULE format
+  recurrenceEndDate: timestamp("recurrence_end_date"),
+  parentEventId: integer("parent_event_id").references((): any => calendarEvents.id),
+
+  // External calendar sync
+  googleEventId: varchar("google_event_id"),
+  outlookEventId: varchar("outlook_event_id"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  syncStatus: varchar("sync_status").default("not_synced"), // not_synced, synced, sync_failed
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_calendar_events_user").on(table.userId),
+  index("idx_calendar_events_start").on(table.startTime),
+  index("idx_calendar_events_job").on(table.jobId),
+  index("idx_calendar_events_google").on(table.googleEventId),
+  index("idx_calendar_events_outlook").on(table.outlookEventId),
+]);
+
+// Calendar sync settings for external calendars
+export const calendarSyncSettings = pgTable("calendar_sync_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+
+  // Google Calendar
+  googleEnabled: boolean("google_enabled").default(false),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiry: timestamp("google_token_expiry"),
+  googleCalendarId: varchar("google_calendar_id"), // Primary calendar ID
+  googleSyncToken: text("google_sync_token"), // For incremental sync
+  googleLastSync: timestamp("google_last_sync"),
+
+  // Outlook Calendar
+  outlookEnabled: boolean("outlook_enabled").default(false),
+  outlookAccessToken: text("outlook_access_token"),
+  outlookRefreshToken: text("outlook_refresh_token"),
+  outlookTokenExpiry: timestamp("outlook_token_expiry"),
+  outlookCalendarId: varchar("outlook_calendar_id"),
+  outlookDeltaToken: text("outlook_delta_token"), // For incremental sync
+  outlookLastSync: timestamp("outlook_last_sync"),
+
+  // Sync preferences
+  syncDirection: varchar("sync_direction").default("both"), // both, to_external, from_external
+  autoSync: boolean("auto_sync").default(true),
+  syncFrequency: integer("sync_frequency").default(15), // Minutes between syncs
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_calendar_sync_user").on(table.userId),
+]);
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -938,4 +1024,25 @@ export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).om
   createdAt: true,
   acceptedAt: true,
   cancelledAt: true,
+});
+
+// Calendar event types
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSyncedAt: true,
+});
+
+// Calendar sync settings types
+export type CalendarSyncSettings = typeof calendarSyncSettings.$inferSelect;
+export type InsertCalendarSyncSettings = typeof calendarSyncSettings.$inferInsert;
+export const insertCalendarSyncSettingsSchema = createInsertSchema(calendarSyncSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  googleLastSync: true,
+  outlookLastSync: true,
 });
