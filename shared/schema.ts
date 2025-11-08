@@ -590,13 +590,81 @@ export const waitlistEntries = pgTable("waitlist_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Enhanced analytics system for AI learning and business insights
 export const analyticsEvents = pgTable("analytics_events", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id"),
-  eventType: varchar("event_type").notNull(),
-  eventData: text("event_data"), // JSON string
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id"), // Track user sessions
+  eventType: varchar("event_type", { length: 100 }).notNull(), // login, ai_chat, invoice_created, etc
+  eventCategory: varchar("event_category", { length: 50 }), // user, business, system, ai
+  eventData: jsonb("event_data"), // Structured event data
+  metadata: jsonb("metadata"), // Device, browser, location, etc
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_analytics_user_id").on(table.userId),
+  index("idx_analytics_event_type").on(table.eventType),
+  index("idx_analytics_created_at").on(table.createdAt),
+  index("idx_analytics_session_id").on(table.sessionId),
+]);
+
+// Session tracking for user behavior analysis
+export const analyticsSessions = pgTable("analytics_sessions", {
+  id: varchar("id").primaryKey(), // UUID
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  endedAt: timestamp("ended_at"),
+  duration: integer("duration"), // seconds
+  pageViews: integer("page_views").default(0),
+  eventsCount: integer("events_count").default(0),
+  device: varchar("device", { length: 50 }), // mobile, tablet, desktop
+  browser: varchar("browser", { length: 50 }),
+  os: varchar("os", { length: 50 }),
+  country: varchar("country", { length: 2 }), // ISO code
+  ipAddress: varchar("ip_address", { length: 45 }),
+}, (table) => [
+  index("idx_sessions_user_id").on(table.userId),
+  index("idx_sessions_started_at").on(table.startedAt),
+]);
+
+// Aggregate metrics for fast querying and AI training
+export const analyticsMetrics = pgTable("analytics_metrics", {
+  id: serial("id").primaryKey(),
+  metricDate: timestamp("metric_date").notNull(), // Date this metric represents
+  metricType: varchar("metric_type", { length: 100 }).notNull(), // daily_active_users, revenue, etc
+  metricValue: decimal("metric_value", { precision: 15, scale: 2 }).notNull(),
+  dimensions: jsonb("dimensions"), // Additional breakdown (e.g., by plan, country)
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_metrics_date_type").on(table.metricDate, table.metricType),
+]);
+
+// Business KPIs for dashboard and AI insights
+export const businessMetrics = pgTable("business_metrics", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  metricDate: timestamp("metric_date").notNull(),
+  // Revenue metrics
+  totalRevenue: decimal("total_revenue", { precision: 15, scale: 2 }).default("0"),
+  invoicesSent: integer("invoices_sent").default(0),
+  invoicesPaid: integer("invoices_paid").default(0),
+  paymentsReceived: integer("payments_received").default(0),
+  // Activity metrics
+  jobsCreated: integer("jobs_created").default(0),
+  jobsCompleted: integer("jobs_completed").default(0),
+  quotesCreated: integer("quotes_created").default(0),
+  quotesAccepted: integer("quotes_accepted").default(0),
+  // AI usage
+  aiChatsCount: integer("ai_chats_count").default(0),
+  tokensUsed: integer("tokens_used").default(0),
+  // Customer metrics
+  newCustomers: integer("new_customers").default(0),
+  repeatCustomers: integer("repeat_customers").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_business_metrics_user_date").on(table.userId, table.metricDate),
+]);
 
 // Beta schemas
 export const insertBetaInviteSchema = createInsertSchema(betaInvites).omit({
@@ -659,6 +727,12 @@ export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedbackSubmissions.$inferSelect;
 export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
+export type InsertAnalyticsSession = typeof analyticsSessions.$inferInsert;
+export type AnalyticsMetric = typeof analyticsMetrics.$inferSelect;
+export type InsertAnalyticsMetric = typeof analyticsMetrics.$inferInsert;
+export type BusinessMetric = typeof businessMetrics.$inferSelect;
+export type InsertBusinessMetric = typeof businessMetrics.$inferInsert;
 export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type InsertRoadmapItem = z.infer<typeof insertRoadmapItemSchema>;

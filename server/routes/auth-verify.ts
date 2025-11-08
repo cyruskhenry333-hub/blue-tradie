@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
 import { storage } from "../storage";
 import { authService } from "../services/auth-service";
+import { analyticsService } from "../services/analyticsService";
 
 const MAGIC_LINK_JWT_SECRET = process.env.MAGIC_LINK_JWT_SECRET || process.env.SESSION_SECRET || 'fallback-jwt-secret';
 const DEFAULT_REDIRECT = "/dashboard?fresh=1";
@@ -87,6 +88,23 @@ authVerifyRouter.get("/auth/verify", async (req: Request, res: Response) => {
       sessionKeys: Object.keys(sess),
       redirectTo: redirect
     });
+
+    // Track login analytics event
+    await analyticsService.trackEvent({
+      userId: payload.userId,
+      eventType: sess.firstLogin ? 'first_login' : 'login',
+      eventCategory: 'user',
+      eventData: {
+        method: 'magic_link',
+        isOnboarded: sess.isOnboarded,
+        isFirstLogin: sess.firstLogin || false,
+        redirectTo: redirect,
+      },
+      req,
+    });
+
+    // Start analytics session for user
+    const analyticsSessionId = await analyticsService.startSession(payload.userId, req);
 
     // Step 7: Persist session BEFORE redirect to avoid race conditions
     sess.save((err: unknown) => {

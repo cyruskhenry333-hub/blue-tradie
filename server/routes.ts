@@ -23,6 +23,7 @@ import { trialService } from "./services/trialService";
 // Removed legacy emailService import - now using sendgrid-email-service
 import { aiService } from "./services/aiService";
 import { tokenLedgerService } from "./services/tokenLedgerService";
+import { analyticsService } from "./services/analyticsService";
 import { insertJobSchema, insertInvoiceSchema, insertExpenseSchema, insertChatMessageSchema, insertTestimonialSchema, insertRoadmapItemSchema, insertFeatureRequestSchema, insertWaitlistEntrySchema } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -2564,12 +2565,12 @@ What would you like to know more about?`;
     try {
       const userId = req.user.claims.sub;
       const { agentType, message, tone = "casual" } = req.body;
-      
+
       // Get user info for region context and personalization
       const user = await storage.getUser(userId);
       const userCountry = user?.country || "Australia";
       const userTone = user?.tonePreference || tone;
-      
+
       // Get chat history for context
       const history = await storage.getChatHistory(userId, agentType, 10);
       const chatHistory = history.reverse().map(msg => ({
@@ -2603,6 +2604,22 @@ What would you like to know more about?`;
 
       // Mark first AI chat milestone as completed
       await JourneyTracker.markFirstAiChatComplete(userId);
+
+      // Track analytics event
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'ai_chat',
+        eventCategory: 'ai',
+        eventData: {
+          agentType,
+          tokensUsed: aiResponse.tokens_used,
+          costAud: aiResponse.cost_aud,
+          source: aiResponse.source, // cached or openai
+          messageLength: message.length,
+          responseLength: aiResponse.content.length,
+        },
+        req,
+      });
 
       // Return response in expected format
       const response = {
