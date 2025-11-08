@@ -14,7 +14,8 @@ import {
   Target,
   Compass,
   FileSignature,
-  Calendar
+  Calendar,
+  FolderOpen
 } from "lucide-react";
 
 export default function QuickAccessPanel() {
@@ -105,6 +106,15 @@ export default function QuickAccessPanel() {
       href: "/calendar",
       color: "bg-red-500 hover:bg-red-600",
       shortcut: "C"
+    },
+    {
+      id: "documents",
+      title: "Documents",
+      description: "Manage files and photos",
+      icon: FolderOpen,
+      href: "/documents",
+      color: "bg-yellow-500 hover:bg-yellow-600",
+      shortcut: "D"
     }
   ];
 

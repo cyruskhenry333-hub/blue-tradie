@@ -55,6 +55,7 @@ import Quotes from "@/pages/quotes";
 import CustomerPortal from "@/pages/customer-portal";
 import Team from "@/pages/team";
 import CalendarPage from "@/pages/calendar";
+import DocumentsPage from "@/pages/documents";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -155,6 +156,7 @@ function Router() {
                 <Route path="/automation" component={Automation} />
                 <Route path="/team" component={Team} />
                 <Route path="/calendar" component={CalendarPage} />
+                <Route path="/documents" component={DocumentsPage} />
 
               </>
             )}
