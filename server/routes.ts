@@ -22,6 +22,7 @@ import { JourneyTracker } from "./services/journeyTracker";
 import { trialService } from "./services/trialService";
 // Removed legacy emailService import - now using sendgrid-email-service
 import { aiService } from "./services/aiService";
+import { tokenLedgerService } from "./services/tokenLedgerService";
 import { insertJobSchema, insertInvoiceSchema, insertExpenseSchema, insertChatMessageSchema, insertTestimonialSchema, insertRoadmapItemSchema, insertFeatureRequestSchema, insertWaitlistEntrySchema } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -2624,12 +2625,24 @@ What would you like to know more about?`;
     try {
       const userId = req.user.claims.sub;
       const { agentType } = req.params;
-      
+
       const history = await storage.getChatHistory(userId, agentType, 50);
       res.json(history.reverse()); // Reverse to show oldest first
     } catch (error) {
       console.error("Error fetching chat history:", error);
       res.status(500).json({ message: "Failed to fetch chat history" });
+    }
+  });
+
+  // Token usage statistics
+  app.get('/api/tokens/stats', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const stats = await tokenLedgerService.getTokenStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching token stats:", error);
+      res.status(500).json({ message: "Failed to fetch token statistics" });
     }
   });
 
