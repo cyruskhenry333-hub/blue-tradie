@@ -29,6 +29,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { invoices, chatMessages, feedbackSubmissions } from "@shared/schema";
 import { registerAnalyticsRoutes } from "./routes/analytics";
+import { analyticsApiRouter } from "./routes/analytics-api";
 import { registerDemoRoutes } from "./routes/demo-routes";
 import { registerStripeWebhookRoutes } from "./routes/stripe-webhook";
 import { registerSubscriptionRoutes } from "./routes/subscriptions";
@@ -3593,7 +3594,8 @@ What would you like to know more about?`;
 
   // Register analytics routes
   registerAnalyticsRoutes(app);
-  
+  app.use('/', analyticsApiRouter);
+
   // Register demo routes (conditionally in preview)
   const PREVIEW_DISABLE_DEMO_ROUTES = process.env.PREVIEW_DISABLE_DEMO_ROUTES === 'true';
   
