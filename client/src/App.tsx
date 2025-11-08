@@ -53,6 +53,7 @@ import Automation from "@/pages/automation";
 import BusinessInsights from "@/pages/business-insights";
 import Quotes from "@/pages/quotes";
 import CustomerPortal from "@/pages/customer-portal";
+import Team from "@/pages/team";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -151,6 +152,7 @@ function Router() {
                 <Route path="/insights" component={BusinessInsights} />
                 <Route path="/directory" component={TradieDirectory} />
                 <Route path="/automation" component={Automation} />
+                <Route path="/team" component={Team} />
 
               </>
             )}

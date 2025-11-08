@@ -86,6 +86,15 @@ export default function QuickAccessPanel() {
       href: "/roadmap",
       color: "bg-indigo-500 hover:bg-indigo-600",
       shortcut: "R"
+    },
+    {
+      id: "team",
+      title: "Team",
+      description: "Manage your team members",
+      icon: Users,
+      href: "/team",
+      color: "bg-teal-500 hover:bg-teal-600",
+      shortcut: "T"
     }
   ];
 
