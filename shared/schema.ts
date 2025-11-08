@@ -396,6 +396,71 @@ export const customerPortalTokens = pgTable("customer_portal_tokens", {
   index("idx_customer_tokens_expires").on(table.expiresAt),
 ]);
 
+// ========== TEAMS & COLLABORATION ==========
+
+// Team members - for Blue Teams tier
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+
+  // Business owner (the paying subscriber)
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Team member (who gets access to owner's data)
+  memberId: varchar("member_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Role and permissions
+  role: varchar("role").notNull().default("member"), // owner, admin, member, viewer
+  permissions: jsonb("permissions"), // Granular permissions: { invoices: ['view', 'create'], jobs: ['view'], quotes: ['view', 'edit'] }
+
+  // Status
+  status: varchar("status").notNull().default("active"), // active, inactive, suspended
+
+  // Metadata
+  invitedBy: varchar("invited_by").references(() => users.id),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_team_members_owner").on(table.ownerId),
+  index("idx_team_members_member").on(table.memberId),
+  index("idx_team_members_status").on(table.status),
+  // Ensure a user can't be added to the same team twice
+  index("idx_team_members_unique").on(table.ownerId, table.memberId),
+]);
+
+// Team invitations - pending team member invites
+export const teamInvitations = pgTable("team_invitations", {
+  id: serial("id").primaryKey(),
+
+  // Business owner sending the invite
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Invitee details
+  email: varchar("email").notNull(),
+  role: varchar("role").notNull().default("member"), // The role they'll have when they accept
+
+  // Invitation token (unique, secure)
+  token: text("token").notNull().unique(), // Secure random token for invite link
+  tokenHash: text("token_hash").notNull().unique(), // SHA256 hash for database lookup
+
+  // Status
+  status: varchar("status").notNull().default("pending"), // pending, accepted, expired, cancelled
+
+  // Who sent the invite
+  invitedBy: varchar("invited_by").notNull().references(() => users.id),
+
+  // Lifecycle
+  expiresAt: timestamp("expires_at").notNull(), // 7 days default
+  acceptedAt: timestamp("accepted_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_team_invites_owner").on(table.ownerId),
+  index("idx_team_invites_email").on(table.email),
+  index("idx_team_invites_token_hash").on(table.tokenHash),
+  index("idx_team_invites_status").on(table.status),
+]);
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -851,6 +916,26 @@ export type RoadmapVote = typeof roadmapVotes.$inferSelect;
 export type AuthSession = typeof authSessions.$inferSelect;
 export type InsertAuthSession = typeof authSessions.$inferInsert;
 
-// Magic link token types  
+// Magic link token types
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
+
+// Team member types
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  joinedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Team invitation types
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertTeamInvitation = typeof teamInvitations.$inferInsert;
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+  cancelledAt: true,
+});
