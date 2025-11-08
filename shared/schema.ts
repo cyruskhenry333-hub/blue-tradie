@@ -319,6 +319,83 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Quotes/Estimates system
+export const quotes = pgTable("quotes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobId: integer("job_id").references(() => jobs.id),
+  quoteNumber: varchar("quote_number").notNull().unique(),
+  yearSequence: integer("year_sequence").notNull(), // Annual sequence like invoices
+
+  // Customer details
+  customerName: varchar("customer_name").notNull(),
+  customerEmail: varchar("customer_email"),
+  customerPhone: varchar("customer_phone"),
+  customerAddress: text("customer_address"),
+
+  // Quote details
+  title: varchar("title").notNull(), // e.g., "Kitchen Renovation", "Plumbing Repair"
+  description: text("description"), // Overall job description
+  lineItems: jsonb("line_items").notNull(), // [{description, quantity, rate, amount, type: 'labor'|'materials'}]
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  gst: decimal("gst", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+
+  // Status tracking
+  status: varchar("status").notNull().default("draft"), // draft, sent, viewed, accepted, rejected, expired, converted
+  validUntil: timestamp("valid_until"), // Quote expiry date
+
+  // Customer interaction
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  respondedAt: timestamp("responded_at"),
+  customerNotes: text("customer_notes"), // Notes from customer when accepting/rejecting
+
+  // Conversion to invoice
+  convertedToInvoiceId: integer("converted_to_invoice_id").references(() => invoices.id),
+  convertedAt: timestamp("converted_at"),
+
+  // Communication
+  portalAccessToken: varchar("portal_access_token"), // Unique token for customer portal access
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_quotes_user_id").on(table.userId),
+  index("idx_quotes_status").on(table.status),
+  index("idx_quotes_customer_email").on(table.customerEmail),
+]);
+
+// Customer portal access tokens (magic links for customers)
+export const customerPortalTokens = pgTable("customer_portal_tokens", {
+  id: text("id").primaryKey(), // UUID
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // The tradie who owns this customer
+
+  // Customer identification
+  customerEmail: varchar("customer_email").notNull(),
+  customerName: varchar("customer_name"),
+  customerPhone: varchar("customer_phone"),
+
+  // Token details
+  tokenHash: text("token_hash").notNull().unique(), // SHA256 hash of actual token
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+
+  // What customer can access
+  quoteIds: jsonb("quote_ids"), // Array of quote IDs customer can view
+  invoiceIds: jsonb("invoice_ids"), // Array of invoice IDs customer can view
+  jobIds: jsonb("job_ids"), // Array of job IDs customer can view
+
+  // Metadata
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_customer_tokens_hash").on(table.tokenHash),
+  index("idx_customer_tokens_email").on(table.customerEmail),
+  index("idx_customer_tokens_expires").on(table.expiresAt),
+]);
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -430,10 +507,14 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
+export type InsertQuote = typeof quotes.$inferInsert;
+export type Quote = typeof quotes.$inferSelect;
 export type InsertExpense = typeof expenses.$inferInsert;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertCustomerPortalToken = typeof customerPortalTokens.$inferInsert;
+export type CustomerPortalToken = typeof customerPortalTokens.$inferSelect;
 
 // Public waitlist table for general interest signups (password gate)
 export const publicWaitlistTable = pgTable("public_waitlist", {
@@ -469,11 +550,32 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   updatedAt: true,
 }).extend({
   subtotal: z.union([z.string(), z.number()]).transform(val => String(val)),
-  gst: z.union([z.string(), z.number()]).transform(val => String(val)), 
+  gst: z.union([z.string(), z.number()]).transform(val => String(val)),
   total: z.union([z.string(), z.number()]).transform(val => String(val))
 });
 
-
+export const insertQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  quoteNumber: true, // Auto-generated
+  yearSequence: true, // Auto-generated
+  createdAt: true,
+  updatedAt: true,
+  sentAt: true,
+  viewedAt: true,
+  respondedAt: true,
+  convertedAt: true,
+}).extend({
+  subtotal: z.union([z.string(), z.number()]).transform(val => String(val)),
+  gst: z.union([z.string(), z.number()]).transform(val => String(val)),
+  total: z.union([z.string(), z.number()]).transform(val => String(val)),
+  lineItems: z.array(z.object({
+    description: z.string(),
+    quantity: z.number(),
+    rate: z.number(),
+    amount: z.number(),
+    type: z.enum(['labor', 'materials']).optional(),
+  })),
+});
 
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
