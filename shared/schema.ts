@@ -547,6 +547,83 @@ export const calendarSyncSettings = pgTable("calendar_sync_settings", {
   index("idx_calendar_sync_user").on(table.userId),
 ]);
 
+// ========== DOCUMENTS & FILES ==========
+
+// Document storage for job photos, invoices, quotes, etc.
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // File details
+  fileName: varchar("file_name").notNull(),
+  originalFileName: varchar("original_file_name").notNull(),
+  fileSize: integer("file_size").notNull(), // in bytes
+  mimeType: varchar("mime_type").notNull(),
+  fileExtension: varchar("file_extension"),
+
+  // Storage location
+  storageProvider: varchar("storage_provider").notNull().default("local"), // local, s3, gcs
+  storagePath: text("storage_path").notNull(), // Full path or URL
+  storageKey: text("storage_key"), // S3/GCS object key
+  bucketName: varchar("bucket_name"), // S3/GCS bucket
+
+  // Document categorization
+  documentType: varchar("document_type").notNull(), // photo, invoice, quote, receipt, contract, other
+  category: varchar("category"), // before, after, progress, damage, etc.
+
+  // Relationships
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  quoteId: integer("quote_id").references(() => quotes.id, { onDelete: "set null" }),
+  expenseId: integer("expense_id").references(() => expenses.id, { onDelete: "set null" }),
+
+  // Metadata
+  title: varchar("title"),
+  description: text("description"),
+  tags: jsonb("tags"), // Array of tags for searching
+  isPublic: boolean("is_public").default(false), // Can be shared with customers
+
+  // Image-specific metadata
+  width: integer("width"),
+  height: integer("height"),
+  thumbnailPath: text("thumbnail_path"),
+
+  // Security
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  accessedAt: timestamp("accessed_at"),
+  downloadCount: integer("download_count").default(0),
+
+  // Lifecycle
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_documents_user").on(table.userId),
+  index("idx_documents_job").on(table.jobId),
+  index("idx_documents_invoice").on(table.invoiceId),
+  index("idx_documents_quote").on(table.quoteId),
+  index("idx_documents_type").on(table.documentType),
+  index("idx_documents_created").on(table.createdAt),
+]);
+
+// Document access logs for security and compliance
+export const documentAccessLogs = pgTable("document_access_logs", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+
+  // Access details
+  action: varchar("action").notNull(), // view, download, delete, share
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+
+  // Metadata
+  accessedAt: timestamp("accessed_at").defaultNow(),
+}, (table) => [
+  index("idx_doc_access_document").on(table.documentId),
+  index("idx_doc_access_user").on(table.userId),
+  index("idx_doc_access_time").on(table.accessedAt),
+]);
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -1046,3 +1123,18 @@ export const insertCalendarSyncSettingsSchema = createInsertSchema(calendarSyncS
   googleLastSync: true,
   outlookLastSync: true,
 });
+
+// Document types
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  accessedAt: true,
+  downloadCount: true,
+});
+
+// Document access log types
+export type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
+export type InsertDocumentAccessLog = typeof documentAccessLogs.$inferInsert;
