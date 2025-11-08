@@ -361,7 +361,7 @@ export const aiResponses = pgTable("ai_responses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Token usage tracking table
+// Token usage tracking table (legacy - being phased out for ledger)
 export const tokenUsage = pgTable("token_usage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -372,10 +372,55 @@ export const tokenUsage = pgTable("token_usage", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Token ledger - provision/reconcile/rollback accounting
+export const tokenLedger = pgTable("token_ledger", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Transaction details
+  amount: integer("amount").notNull(), // negative for usage, positive for grants/refunds
+  balanceAfter: integer("balance_after").notNull(), // running balance after this entry
+  reason: varchar("reason", { length: 50 }).notNull(), // 'monthly_grant', 'advisor_chat', 'rollover', 'purchase', 'provision', 'reconciliation', 'rollback'
+
+  // Context metadata
+  metadata: jsonb("metadata"), // {advisor: 'financial', messageId: 123, openaiUsage: {...}, estimated: true, etc.}
+
+  // Idempotency & deduplication
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
+
+  // Audit trail
+  transactionId: varchar("transaction_id", { length: 255 }).notNull(), // trace ID for grouping provision→reconcile→rollback
+  reconciliationStatus: varchar("reconciliation_status", { length: 20 }).default("pending"), // 'pending', 'confirmed', 'adjusted', 'rolled_back'
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Token usage alerts tracking (for one-per-month 80% alerts)
+export const tokenAlerts = pgTable("token_alerts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  alertType: varchar("alert_type", { length: 50 }).notNull(), // '80_percent', '100_percent'
+  month: varchar("month", { length: 7 }).notNull(), // 'YYYY-MM' format
+  balance: integer("balance").notNull(), // balance at time of alert
+  limit: integer("limit").notNull(), // monthly limit at time of alert
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+// Indexes for performance
+// CREATE INDEX idx_token_ledger_user ON token_ledger(user_id, created_at DESC);
+// CREATE INDEX idx_token_ledger_reconcile ON token_ledger(reconciliation_status) WHERE reconciliation_status = 'pending';
+// CREATE INDEX idx_token_ledger_transaction ON token_ledger(transaction_id);
+// CREATE UNIQUE INDEX idx_token_alerts_user_month ON token_alerts(user_id, alert_type, month);
+
 export type AIResponse = typeof aiResponses.$inferSelect;
 export type InsertAIResponse = typeof aiResponses.$inferInsert;
 export type TokenUsage = typeof tokenUsage.$inferSelect;
 export type InsertTokenUsage = typeof tokenUsage.$inferInsert;
+export type TokenLedgerEntry = typeof tokenLedger.$inferSelect;
+export type InsertTokenLedgerEntry = typeof tokenLedger.$inferInsert;
+export type TokenAlert = typeof tokenAlerts.$inferSelect;
+export type InsertTokenAlert = typeof tokenAlerts.$inferInsert;
 export type InsertJob = typeof jobs.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type InsertTrialEmail = typeof trialEmails.$inferInsert;
