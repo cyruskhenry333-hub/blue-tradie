@@ -3,16 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { 
-  Plus, 
-  MessageSquare, 
-  FileText, 
-  Users, 
-  Receipt, 
+import {
+  Plus,
+  MessageSquare,
+  FileText,
+  Users,
+  Receipt,
   Settings,
   Sparkles,
   Target,
-  Compass
+  Compass,
+  FileSignature
 } from "lucide-react";
 
 export default function QuickAccessPanel() {
@@ -28,6 +29,16 @@ export default function QuickAccessPanel() {
       color: "bg-blue-500 hover:bg-blue-600",
       shortcut: "I",
       className: "invoices-link"
+    },
+    {
+      id: "quotes",
+      title: "Quotes",
+      description: "Create and manage quotes",
+      icon: FileSignature,
+      href: "/quotes",
+      color: "bg-cyan-500 hover:bg-cyan-600",
+      shortcut: "U",
+      className: "quotes-link"
     },
     {
       id: "add-job",

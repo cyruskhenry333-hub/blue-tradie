@@ -51,6 +51,8 @@ import AIAdvisors from "@/pages/ai-advisors";
 import TradieDirectory from "@/pages/tradie-directory";
 import Automation from "@/pages/automation";
 import BusinessInsights from "@/pages/business-insights";
+import Quotes from "@/pages/quotes";
+import CustomerPortal from "@/pages/customer-portal";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -105,7 +107,8 @@ function Router() {
             <Route path="/test-email-button" component={TestEmailButton} />
             <Route path="/roadmap" component={PublicRoadmap} />
             <Route path="/client/:jobId/:token" component={ClientPortal} />
-            
+            <Route path="/portal" component={CustomerPortal} />
+
             {/* Redirects */}
             <Route path="/vip" component={() => { window.location.href = '/demo'; return null; }} />
             <Route path="/early-access" component={() => { window.location.href = '/demo'; return null; }} />
@@ -128,6 +131,7 @@ function Router() {
                 <Route path="/" component={Dashboard} />
                 <Route path="/chat/:agentType?" component={Chat} />
                 <Route path="/invoices" component={Invoices} />
+                <Route path="/quotes" component={Quotes} />
                 <Route path="/jobs" component={JobsPage} />
                 <Route path="/expenses" component={ExpensesPage} />
                 <Route path="/logbook" component={Logbook} />
