@@ -50,6 +50,7 @@ import TestEmailButton from "@/pages/test-email-button";
 import AIAdvisors from "@/pages/ai-advisors";
 import TradieDirectory from "@/pages/tradie-directory";
 import Automation from "@/pages/automation";
+import BusinessInsights from "@/pages/business-insights";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -143,6 +144,7 @@ function Router() {
                 <Route path="/testimonial" component={TestimonialPage} />
                 <Route path="/referrals" component={ReferralDashboard} />
                 <Route path="/ai-advisors" component={AIAdvisors} />
+                <Route path="/insights" component={BusinessInsights} />
                 <Route path="/directory" component={TradieDirectory} />
                 <Route path="/automation" component={Automation} />
 
