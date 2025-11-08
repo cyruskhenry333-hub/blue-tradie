@@ -1302,8 +1302,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const jobData = insertJobSchema.parse({ ...req.body, userId });
-      
+
       const job = await storage.createJob(jobData);
+
+      // Track analytics
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'job_created',
+        eventCategory: 'business',
+        eventData: {
+          jobId: job.id,
+          customerName: job.customerName,
+          status: job.status,
+          serviceType: job.serviceType,
+        },
+        req,
+      });
+
       res.json(job);
     } catch (error) {
       console.error("Error creating job:", error);
@@ -1353,14 +1368,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create invoice (storage will auto-generate invoice number and year sequence)
       const invoice = await storage.createInvoice(validatedData);
-      
+
       // Mark first invoice milestone as completed
       await JourneyTracker.updateMilestone({
         userId,
         milestoneId: "first_invoice_created",
         completed: true
       });
-      
+
+      // Track analytics
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'invoice_created',
+        eventCategory: 'business',
+        eventData: {
+          invoiceId: invoice.id,
+          customerName: invoice.customerName,
+          total: invoice.total,
+          status: invoice.status,
+        },
+        req,
+      });
+
       res.json(invoice);
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -1384,9 +1413,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const invoiceId = parseInt(req.params.id);
       const { status } = req.body;
-      
+
       const paidDate = status === 'paid' ? new Date() : undefined;
       const invoice = await storage.updateInvoiceStatus(invoiceId, status, paidDate);
+
+      // Track analytics (especially for paid invoices - key business metric)
+      await analyticsService.trackEvent({
+        userId,
+        eventType: status === 'paid' ? 'invoice_paid' : 'invoice_status_changed',
+        eventCategory: 'business',
+        eventData: {
+          invoiceId,
+          newStatus: status,
+          total: invoice.total,
+          customerName: invoice.customerName,
+          paidDate: paidDate?.toISOString(),
+        },
+        req,
+      });
+
+      // If invoice was paid, track payment received event for revenue metrics
+      if (status === 'paid' && invoice.total) {
+        await analyticsService.trackEvent({
+          userId,
+          eventType: 'payment_received',
+          eventCategory: 'business',
+          eventData: {
+            invoiceId,
+            amount: parseFloat(invoice.total),
+            customerName: invoice.customerName,
+            paymentDate: paidDate?.toISOString(),
+          },
+          req,
+        });
+      }
+
       res.json(invoice);
     } catch (error) {
       console.error("Error updating invoice:", error);
