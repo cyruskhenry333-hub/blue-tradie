@@ -624,6 +624,120 @@ export const documentAccessLogs = pgTable("document_access_logs", {
   index("idx_doc_access_time").on(table.accessedAt),
 ]);
 
+// ========== AUTOMATION & AI ==========
+
+// Automation rules for AI-powered workflows
+export const automationRules = pgTable("automation_rules", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Rule details
+  name: varchar("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+
+  // Trigger configuration
+  triggerType: varchar("trigger_type").notNull(), // job_completed, invoice_sent, quote_accepted, days_after_job, etc.
+  triggerConditions: jsonb("trigger_conditions"), // Additional conditions
+
+  // Timing
+  delayDays: integer("delay_days").default(0), // Delay before executing action
+  delayHours: integer("delay_hours").default(0),
+
+  // Action configuration
+  actionType: varchar("action_type").notNull(), // send_email, send_sms, create_task, request_review
+  actionConfig: jsonb("action_config"), // Action-specific configuration
+
+  // AI-powered content
+  useAI: boolean("use_ai").default(false), // Use AI to generate message content
+  aiPrompt: text("ai_prompt"), // Prompt for AI content generation
+  staticContent: text("static_content"), // Pre-written content if not using AI
+
+  // Statistics
+  executionCount: integer("execution_count").default(0),
+  lastExecutedAt: timestamp("last_executed_at"),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_rules_user").on(table.userId),
+  index("idx_automation_rules_active").on(table.isActive),
+  index("idx_automation_rules_trigger").on(table.triggerType),
+]);
+
+// Automation execution log
+export const automationExecutions = pgTable("automation_executions", {
+  id: serial("id").primaryKey(),
+  ruleId: integer("rule_id").notNull().references(() => automationRules.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Execution details
+  status: varchar("status").notNull(), // pending, success, failed, skipped
+  errorMessage: text("error_message"),
+
+  // Context
+  triggerData: jsonb("trigger_data"), // Data that triggered the rule
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  quoteId: integer("quote_id").references(() => quotes.id, { onDelete: "set null" }),
+
+  // Generated content (if AI was used)
+  generatedContent: text("generated_content"),
+  aiTokensUsed: integer("ai_tokens_used"),
+
+  // Result
+  actionResult: jsonb("action_result"), // Result of the action (email sent, SMS delivered, etc.)
+
+  // Timing
+  scheduledFor: timestamp("scheduled_for"),
+  executedAt: timestamp("executed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_exec_rule").on(table.ruleId),
+  index("idx_automation_exec_user").on(table.userId),
+  index("idx_automation_exec_status").on(table.status),
+  index("idx_automation_exec_scheduled").on(table.scheduledFor),
+]);
+
+// Review requests tracking
+export const reviewRequests = pgTable("review_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+
+  // Customer details
+  customerName: varchar("customer_name").notNull(),
+  customerEmail: varchar("customer_email"),
+  customerPhone: varchar("customer_phone"),
+
+  // Request details
+  requestType: varchar("request_type").default("google_review"), // google_review, facebook_review, testimonial
+  sentVia: varchar("sent_via"), // email, sms, both
+  message: text("message"),
+
+  // Status
+  status: varchar("status").default("sent"), // sent, clicked, completed, declined
+  clickedAt: timestamp("clicked_at"),
+  completedAt: timestamp("completed_at"),
+  reviewLink: text("review_link"), // Link to leave review
+
+  // Review tracking
+  reviewReceived: boolean("review_received").default(false),
+  reviewRating: integer("review_rating"), // 1-5 stars
+  reviewText: text("review_text"),
+
+  // Metadata
+  sentAt: timestamp("sent_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_review_requests_user").on(table.userId),
+  index("idx_review_requests_job").on(table.jobId),
+  index("idx_review_requests_status").on(table.status),
+]);
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -1138,3 +1252,34 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
 // Document access log types
 export type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
 export type InsertDocumentAccessLog = typeof documentAccessLogs.$inferInsert;
+
+// Automation rule types
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = typeof automationRules.$inferInsert;
+export const insertAutomationRuleSchema = createInsertSchema(automationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastExecutedAt: true,
+  executionCount: true,
+  successCount: true,
+  failureCount: true,
+});
+
+// Automation execution types
+export type AutomationExecution = typeof automationExecutions.$inferSelect;
+export type InsertAutomationExecution = typeof automationExecutions.$inferInsert;
+export const insertAutomationExecutionSchema = createInsertSchema(automationExecutions).omit({
+  id: true,
+  executedAt: true,
+});
+
+// Review request types
+export type ReviewRequest = typeof reviewRequests.$inferSelect;
+export type InsertReviewRequest = typeof reviewRequests.$inferInsert;
+export const insertReviewRequestSchema = createInsertSchema(reviewRequests).omit({
+  id: true,
+  createdAt: true,
+  clickedAt: true,
+  completedAt: true,
+});
