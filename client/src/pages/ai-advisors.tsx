@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Brain, 
-  Scale, 
-  Calculator, 
-  Megaphone, 
-  Settings, 
+import { TokenDashboard } from "@/components/TokenDashboard";
+import {
+  Brain,
+  Scale,
+  Calculator,
+  Megaphone,
+  Settings,
   Zap,
   Send,
   Mic,
@@ -172,6 +173,11 @@ export default function AIAdvisors() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">AI Business Advisors</h1>
         <p className="text-gray-600 mt-2">Your expert team of AI coaches, ready 24/7 to help grow your business</p>
+      </div>
+
+      {/* Token Usage Dashboard */}
+      <div className="mb-6">
+        <TokenDashboard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
