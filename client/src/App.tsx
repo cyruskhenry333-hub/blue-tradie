@@ -57,6 +57,7 @@ import Team from "@/pages/team";
 import CalendarPage from "@/pages/calendar";
 import DocumentsPage from "@/pages/documents";
 import Tax from "@/pages/tax";
+import VoiceQuote from "@/pages/voice-quote";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -165,6 +166,7 @@ function Router() {
                 <Route path="/calendar" component={CalendarPage} />
                 <Route path="/documents" component={DocumentsPage} />
                 <Route path="/tax" component={Tax} />
+                <Route path="/voice-quote" component={VoiceQuote} />
 
               </>
             )}
