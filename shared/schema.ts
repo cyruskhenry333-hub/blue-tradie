@@ -1283,3 +1283,160 @@ export const insertReviewRequestSchema = createInsertSchema(reviewRequests).omit
   clickedAt: true,
   completedAt: true,
 });
+
+// ========== ACCOUNTING & TAX ==========
+
+// User tax settings and preferences
+export const taxSettings = pgTable("tax_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+
+  // Business registration
+  abn: varchar("abn", { length: 11 }), // Australian Business Number
+  gstRegistered: boolean("gst_registered").default(false),
+  gstRegistrationDate: timestamp("gst_registration_date"),
+
+  // Tax year settings
+  financialYearEnd: varchar("financial_year_end").default("30-06"), // DD-MM format
+  accountingBasis: varchar("accounting_basis").default("accrual"), // accrual or cash
+
+  // BAS settings
+  basReportingPeriod: varchar("bas_reporting_period").default("quarterly"), // monthly, quarterly, annually
+  nextBasDueDate: timestamp("next_bas_due_date"),
+
+  // Tax rates (can be overridden)
+  gstRate: decimal("gst_rate", { precision: 5, scale: 2 }).default("10.00"), // 10% GST in Australia
+
+  // Accountant details
+  accountantName: varchar("accountant_name"),
+  accountantEmail: varchar("accountant_email"),
+  accountantPhone: varchar("accountant_phone"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Quarterly BAS (Business Activity Statement) reports
+export const basReports = pgTable("bas_reports", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Reporting period
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  quarter: varchar("quarter").notNull(), // Q1 2025, Q2 2025, etc.
+
+  // GST calculations (all in cents for precision)
+  g1TotalSales: decimal("g1_total_sales", { precision: 15, scale: 2 }).default("0"), // Total sales including GST
+  g2ExportSales: decimal("g2_export_sales", { precision: 15, scale: 2 }).default("0"), // GST-free exports
+  g3OtherGstFree: decimal("g3_other_gst_free", { precision: 15, scale: 2 }).default("0"), // Other GST-free sales
+  g4InputTaxed: decimal("g4_input_taxed", { precision: 15, scale: 2 }).default("0"), // Input taxed sales
+
+  g10CapitalPurchases: decimal("g10_capital_purchases", { precision: 15, scale: 2 }).default("0"), // Capital purchases
+  g11NonCapitalPurchases: decimal("g11_non_capital_purchases", { precision: 15, scale: 2 }).default("0"), // Non-capital purchases
+
+  // Calculated fields
+  g1aGstOnSales: decimal("g1a_gst_on_sales", { precision: 15, scale: 2 }).default("0"), // GST on sales (÷11)
+  g1bGstOnPurchases: decimal("g1b_gst_on_purchases", { precision: 15, scale: 2 }).default("0"), // GST credits
+
+  // Final BAS amount
+  totalGstPayable: decimal("total_gst_payable", { precision: 15, scale: 2 }).default("0"), // Amount to pay (or refund if negative)
+
+  // Status tracking
+  status: varchar("status").notNull().default("draft"), // draft, submitted, paid
+  submittedAt: timestamp("submitted_at"),
+  paidAt: timestamp("paid_at"),
+
+  // Export
+  pdfUrl: text("pdf_url"), // Generated BAS PDF
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_bas_user_period").on(table.userId, table.periodEnd),
+]);
+
+// Tax-deductible expense categories
+export const taxCategories = pgTable("tax_categories", {
+  id: serial("id").primaryKey(),
+
+  // Category details
+  name: varchar("name").notNull(), // e.g., "Vehicle Expenses", "Tools & Equipment"
+  description: text("description"),
+  category: varchar("category").notNull(), // Standard category name
+
+  // Tax treatment
+  deductible: boolean("deductible").default(true),
+  deductionRate: decimal("deduction_rate", { precision: 5, scale: 2 }).default("100.00"), // Percentage deductible
+
+  // ATO reference
+  atoCategory: varchar("ato_category"), // ATO category code
+  requiresReceipt: boolean("requires_receipt").default(true),
+
+  // Business rules
+  isDefault: boolean("is_default").default(false), // System default categories
+
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_tax_categories_category").on(table.category),
+]);
+
+// AI-suggested tax deductions
+export const taxDeductions = pgTable("tax_deductions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Suggestion details
+  suggestionType: varchar("suggestion_type").notNull(), // missing_expense, unclaimed_deduction, tax_tip
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+
+  // Potential savings
+  estimatedAmount: decimal("estimated_amount", { precision: 10, scale: 2 }),
+  estimatedSaving: decimal("estimated_saving", { precision: 10, scale: 2 }),
+
+  // Related records
+  expenseId: integer("expense_id").references(() => expenses.id),
+  categoryId: integer("category_id").references(() => taxCategories.id),
+
+  // AI context
+  aiReasoning: text("ai_reasoning"), // Why Claude suggested this
+  confidence: decimal("confidence", { precision: 5, scale: 2 }), // 0-100
+
+  // User action
+  status: varchar("status").default("pending"), // pending, accepted, dismissed
+  userNotes: text("user_notes"),
+  actionedAt: timestamp("actioned_at"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_tax_deductions_user_status").on(table.userId, table.status),
+]);
+
+// Tax category types
+export type TaxCategory = typeof taxCategories.$inferSelect;
+export type InsertTaxCategory = typeof taxCategories.$inferInsert;
+
+// Tax settings types
+export type TaxSettings = typeof taxSettings.$inferSelect;
+export type InsertTaxSettings = typeof taxSettings.$inferInsert;
+export const insertTaxSettingsSchema = createInsertSchema(taxSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// BAS report types
+export type BasReport = typeof basReports.$inferSelect;
+export type InsertBasReport = typeof basReports.$inferInsert;
+export const insertBasReportSchema = createInsertSchema(basReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  submittedAt: true,
+  paidAt: true,
+});
+
+// Tax deduction types
+export type TaxDeduction = typeof taxDeductions.$inferSelect;
+export type InsertTaxDeduction = typeof taxDeductions.$inferInsert;

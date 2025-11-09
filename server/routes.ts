@@ -36,6 +36,7 @@ import { teamApiRouter } from "./routes/team-api";
 import { calendarApiRouter } from "./routes/calendar-api";
 import { documentsApiRouter } from "./routes/documents-api";
 import { automationApiRouter } from "./routes/automation-api";
+import { accountingApiRouter } from "./routes/accounting-api";
 import { registerDemoRoutes } from "./routes/demo-routes";
 import { registerStripeWebhookRoutes } from "./routes/stripe-webhook";
 import { registerSubscriptionRoutes } from "./routes/subscriptions";
@@ -3609,6 +3610,7 @@ What would you like to know more about?`;
   app.use('/', calendarApiRouter);
   app.use('/', documentsApiRouter);
   app.use('/', automationApiRouter);
+  app.use('/', accountingApiRouter);
 
   // Register demo routes (conditionally in preview)
   const PREVIEW_DISABLE_DEMO_ROUTES = process.env.PREVIEW_DISABLE_DEMO_ROUTES === 'true';

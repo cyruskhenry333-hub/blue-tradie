@@ -15,7 +15,8 @@ import {
   Compass,
   FileSignature,
   Calendar,
-  FolderOpen
+  FolderOpen,
+  Calculator
 } from "lucide-react";
 
 export default function QuickAccessPanel() {
@@ -115,6 +116,15 @@ export default function QuickAccessPanel() {
       href: "/documents",
       color: "bg-yellow-500 hover:bg-yellow-600",
       shortcut: "D"
+    },
+    {
+      id: "tax",
+      title: "Tax & BAS",
+      description: "GST and tax management",
+      icon: Calculator,
+      href: "/tax",
+      color: "bg-green-500 hover:bg-green-600",
+      shortcut: "X"
     }
   ];
 
