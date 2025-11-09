@@ -19,6 +19,9 @@ import { adminUsersRouter } from "./routes/admin-users";
 // Initialize Sentry before everything else
 initSentry();
 
+// Start automation worker (Bull queue processor)
+import "./workers/automationWorker";
+
 const app = express();
 
 // ===== STEP 1: STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====

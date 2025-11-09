@@ -2,35 +2,40 @@ import { Router, type Request, type Response } from "express";
 import { documentService } from "../services/documentService";
 import multer from "multer";
 import path from "path";
+import {
+  validateUploadedFile,
+  getFileSizeLimits,
+  getAllowedMimeTypes,
+  setDownloadSecurityHeaders
+} from "../middleware/file-security";
+import rateLimit from "express-rate-limit";
 
 export const documentsApiRouter = Router();
 
+// Rate limiter for file uploads
+const uploadRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Max 20 uploads per 15 minutes per user
+  message: { error: 'Too many file uploads. Please try again later.' },
+  keyGenerator: (req: any) => req.user?.claims?.sub || req.ip,
+});
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store in memory for processing
+const { maxSizeBytes } = getFileSizeLimits();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: maxSizeBytes,
+    files: 1, // Only allow 1 file per request
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'text/plain',
-      'text/csv',
-    ];
+    const allowedMimes = getAllowedMimeTypes();
 
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error(`Invalid file type: ${file.mimetype}`));
     }
   },
 });
@@ -40,6 +45,7 @@ const upload = multer({
  */
 documentsApiRouter.post(
   "/api/documents/upload",
+  uploadRateLimit,
   upload.single('file'),
   async (req: any, res: Response) => {
     try {
@@ -52,6 +58,13 @@ documentsApiRouter.post(
       }
 
       const userId = req.user.claims.sub;
+
+      // Enhanced file validation (magic numbers, extension, sanitization)
+      const securityValidation = validateUploadedFile(req.file);
+      if (!securityValidation.valid) {
+        return res.status(400).json({ message: securityValidation.error });
+      }
+
       const {
         documentType = 'other',
         jobId,
@@ -64,7 +77,7 @@ documentsApiRouter.post(
         tags,
       } = req.body;
 
-      // Validate file
+      // Additional validation via documentService
       const validation = documentService.validateFile({
         size: req.file.size,
         mimeType: req.file.mimetype,
@@ -74,11 +87,11 @@ documentsApiRouter.post(
         return res.status(400).json({ message: validation.error });
       }
 
-      // Upload file
+      // Upload file with sanitized filename
       const document = await documentService.uploadLocal(
         userId,
         {
-          originalName: req.file.originalname,
+          originalName: securityValidation.sanitizedFilename || req.file.originalname,
           buffer: req.file.buffer,
           mimeType: req.file.mimetype,
           size: req.file.size,
@@ -193,7 +206,8 @@ documentsApiRouter.get("/api/documents/:id/download", async (req: any, res: Resp
       userAgent: req.get('user-agent'),
     });
 
-    // Get file path and send file
+    // Set security headers and download file
+    setDownloadSecurityHeaders(res, document.originalFileName);
     const filePath = documentService.getFilePath(document);
     res.download(filePath, document.originalFileName);
   } catch (error) {

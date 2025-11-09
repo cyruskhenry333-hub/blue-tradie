@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { automationEngine } from "../services/automationEngine";
 import { insertAutomationRuleSchema } from "@shared/schema";
 import { z } from "zod";
+import { automationRateLimit } from "../middleware/ai-rate-limit";
 
 export const automationApiRouter = Router();
 
@@ -57,7 +58,7 @@ automationApiRouter.get("/api/automation/rules/:id", async (req: any, res: Respo
 /**
  * Create a new automation rule
  */
-automationApiRouter.post("/api/automation/rules", async (req: any, res: Response) => {
+automationApiRouter.post("/api/automation/rules", automationRateLimit, async (req: any, res: Response) => {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
@@ -192,7 +193,7 @@ automationApiRouter.get("/api/automation/rules/:id/executions", async (req: any,
 /**
  * Test an automation rule (dry run)
  */
-automationApiRouter.post("/api/automation/rules/:id/test", async (req: any, res: Response) => {
+automationApiRouter.post("/api/automation/rules/:id/test", automationRateLimit, async (req: any, res: Response) => {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
@@ -296,7 +297,7 @@ automationApiRouter.post("/api/automation/reviews/:token/complete", async (req: 
 /**
  * Trigger automation manually (for testing)
  */
-automationApiRouter.post("/api/automation/trigger", async (req: any, res: Response) => {
+automationApiRouter.post("/api/automation/trigger", automationRateLimit, async (req: any, res: Response) => {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {

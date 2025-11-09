@@ -14,6 +14,7 @@ import {
 import { eq, and, desc, sql } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import { EmailService } from "./emailService";
+import { automationQueue } from "./queueService";
 import crypto from "crypto";
 
 const anthropic = new Anthropic({
@@ -112,18 +113,26 @@ export class AutomationEngine {
   }
 
   /**
-   * Schedule a rule execution for later
+   * Schedule a rule execution for later using Bull queue
    */
   private async scheduleExecution(
     rule: AutomationRule,
     context: TriggerContext,
     delayMs: number
   ): Promise<void> {
-    // In production, this would use a job queue like Bull or Agenda
-    // For now, we'll use setTimeout (only works for short delays)
-    setTimeout(async () => {
-      await this.executeRule(rule, context);
-    }, delayMs);
+    // Add job to Bull queue with delay
+    await automationQueue.add(
+      {
+        ruleId: rule.id,
+        context,
+      },
+      {
+        delay: delayMs,
+        jobId: `automation-${rule.id}-${Date.now()}`,
+      }
+    );
+
+    console.log(`[AutomationEngine] Scheduled rule ${rule.id} to execute in ${delayMs}ms`);
   }
 
   /**

@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { accountingService } from "../services/accountingService";
 import { insertTaxSettingsSchema } from "@shared/schema";
 import { z } from "zod";
+import { aiSuggestionRateLimit } from "../middleware/ai-rate-limit";
 
 export const accountingApiRouter = Router();
 
@@ -207,7 +208,7 @@ accountingApiRouter.get("/api/accounting/suggestions", async (req: any, res: Res
 /**
  * Generate new tax suggestions using AI
  */
-accountingApiRouter.post("/api/accounting/suggestions/generate", async (req: any, res: Response) => {
+accountingApiRouter.post("/api/accounting/suggestions/generate", aiSuggestionRateLimit, async (req: any, res: Response) => {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
