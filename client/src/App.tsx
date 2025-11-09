@@ -65,11 +65,17 @@ import Contact from "@/pages/contact";
 import Help from "@/pages/help";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
+import { initPWA } from "@/utils/pwa";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { showTour, closeTour } = useGuidedTour();
+
+  // Initialize PWA on mount
+  useEffect(() => {
+    initPWA();
+  }, []);
 
   // Check if user needs onboarding flow  
   useEffect(() => {
