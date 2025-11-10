@@ -18,7 +18,8 @@
     "types": ["node", "vite/client", "express-session"],
     "paths": {
       "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@db": ["./server/db.ts"]
     }
   }
 }
