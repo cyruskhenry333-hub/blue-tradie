@@ -10,6 +10,7 @@ import {
   decimal,
   boolean,
   numeric,
+  unique,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -303,7 +304,16 @@ export const invoices = pgTable("invoices", {
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // Unique constraints - prevent duplicate invoice numbers
+  unique("idx_invoices_user_year_sequence").on(table.userId, table.yearSequence),
+  unique("idx_invoices_number_unique").on(table.invoiceNumber),
+  // Performance indexes
+  index("idx_invoices_user_id").on(table.userId),
+  index("idx_invoices_status").on(table.status),
+  index("idx_invoices_user_status_date").on(table.userId, table.status, table.createdAt),
+  index("idx_invoices_stripe_payment_intent").on(table.stripePaymentIntentId),
+]);
 
 export const expenses = pgTable("expenses", {
   id: serial("id").primaryKey(),
@@ -361,9 +371,13 @@ export const quotes = pgTable("quotes", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
+  // Unique constraints - prevent duplicate quote numbers per user
+  unique("idx_quotes_user_year_sequence").on(table.userId, table.yearSequence),
+  // Performance indexes
   index("idx_quotes_user_id").on(table.userId),
   index("idx_quotes_status").on(table.status),
   index("idx_quotes_customer_email").on(table.customerEmail),
+  index("idx_quotes_user_status_date").on(table.userId, table.status, table.createdAt),
 ]);
 
 // Customer portal access tokens (magic links for customers)
@@ -1440,3 +1454,52 @@ export const insertBasReportSchema = createInsertSchema(basReports).omit({
 // Tax deduction types
 export type TaxDeduction = typeof taxDeductions.$inferSelect;
 export type InsertTaxDeduction = typeof taxDeductions.$inferInsert;
+
+// ========== PRODUCTION HARDENING ==========
+
+// Idempotency keys - Prevent duplicate operations
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: text("id").primaryKey(), // Format: "{scope}:{identifier}"
+  scope: text("scope").notNull(), // quote_accept, invoice_update, stripe_webhook, etc.
+  resourceId: text("resource_id"), // ID of resource being operated on
+  requestFingerprint: text("request_fingerprint"), // Hash of request params
+  responseData: jsonb("response_data"), // Cached response for replay
+  status: text("status").notNull().default("processing"), // processing, completed, failed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at").notNull(), // Auto-cleanup old keys
+}, (table) => [
+  index("idx_idempotency_scope").on(table.scope, table.createdAt),
+  index("idx_idempotency_expires").on(table.expiresAt),
+]);
+
+// Webhook events - Track external webhooks (Stripe, Twilio, etc.)
+export const webhookEvents = pgTable("webhook_events", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull(), // stripe, twilio, sendgrid
+  providerEventId: text("provider_event_id").notNull(), // evt_xxx from Stripe
+  eventType: text("event_type").notNull(), // payment_intent.succeeded, etc.
+  eventData: jsonb("event_data").notNull(), // Full webhook payload
+  status: text("status").notNull().default("pending"), // pending, processing, processed, failed
+  processedAt: timestamp("processed_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_webhook_events_status").on(table.status, table.createdAt),
+  index("idx_webhook_events_provider_type").on(table.provider, table.eventType),
+  // Unique constraint to prevent duplicate processing of same event
+  unique("webhook_events_provider_event_unique").on(table.provider, table.providerEventId),
+]);
+
+// Idempotency key types
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type InsertIdempotencyKey = typeof idempotencyKeys.$inferInsert;
+export const insertIdempotencyKeySchema = createInsertSchema(idempotencyKeys);
+export const selectIdempotencyKeySchema = createInsertSchema(idempotencyKeys);
+
+// Webhook event types
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+export const insertWebhookEventSchema = createInsertSchema(webhookEvents);
+export const selectWebhookEventSchema = createInsertSchema(webhookEvents);
