@@ -11,7 +11,9 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx server/db/seed.ts",
-    "icons:generate": "node scripts/generate-icons.js"
+    "icons:generate": "node scripts/generate-icons.js",
+    "test:smoke": "tsx --test tests/smoke-tests.ts",
+    "test:smoke:prod": "APP_URL=https://your-render-url.onrender.com tsx --test tests/smoke-tests.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
