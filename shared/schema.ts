@@ -10,6 +10,7 @@ import {
   decimal,
   boolean,
   numeric,
+  unique,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -186,6 +187,10 @@ export const users = pgTable("users", {
   fromName: varchar("from_name"),
   currencyCode: varchar("currency_code").default("AUD"),
   
+  // Email tracking
+  welcomeSentAt: timestamp("welcome_sent_at"),
+  firstLoginAt: timestamp("first_login_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -299,7 +304,16 @@ export const invoices = pgTable("invoices", {
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // Unique constraints - prevent duplicate invoice numbers
+  unique("idx_invoices_user_year_sequence").on(table.userId, table.yearSequence),
+  unique("idx_invoices_number_unique").on(table.invoiceNumber),
+  // Performance indexes
+  index("idx_invoices_user_id").on(table.userId),
+  index("idx_invoices_status").on(table.status),
+  index("idx_invoices_user_status_date").on(table.userId, table.status, table.createdAt),
+  index("idx_invoices_stripe_payment_intent").on(table.stripePaymentIntentId),
+]);
 
 export const expenses = pgTable("expenses", {
   id: serial("id").primaryKey(),
@@ -314,6 +328,429 @@ export const expenses = pgTable("expenses", {
   receiptUrl: varchar("receipt_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Quotes/Estimates system
+export const quotes = pgTable("quotes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobId: integer("job_id").references(() => jobs.id),
+  quoteNumber: varchar("quote_number").notNull().unique(),
+  yearSequence: integer("year_sequence").notNull(), // Annual sequence like invoices
+
+  // Customer details
+  customerName: varchar("customer_name").notNull(),
+  customerEmail: varchar("customer_email"),
+  customerPhone: varchar("customer_phone"),
+  customerAddress: text("customer_address"),
+
+  // Quote details
+  title: varchar("title").notNull(), // e.g., "Kitchen Renovation", "Plumbing Repair"
+  description: text("description"), // Overall job description
+  lineItems: jsonb("line_items").notNull(), // [{description, quantity, rate, amount, type: 'labor'|'materials'}]
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  gst: decimal("gst", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+
+  // Status tracking
+  status: varchar("status").notNull().default("draft"), // draft, sent, viewed, accepted, rejected, expired, converted
+  validUntil: timestamp("valid_until"), // Quote expiry date
+
+  // Customer interaction
+  sentAt: timestamp("sent_at"),
+  viewedAt: timestamp("viewed_at"),
+  respondedAt: timestamp("responded_at"),
+  customerNotes: text("customer_notes"), // Notes from customer when accepting/rejecting
+
+  // Conversion to invoice
+  convertedToInvoiceId: integer("converted_to_invoice_id").references(() => invoices.id),
+  convertedAt: timestamp("converted_at"),
+
+  // Communication
+  portalAccessToken: varchar("portal_access_token"), // Unique token for customer portal access
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Unique constraints - prevent duplicate quote numbers per user
+  unique("idx_quotes_user_year_sequence").on(table.userId, table.yearSequence),
+  // Performance indexes
+  index("idx_quotes_user_id").on(table.userId),
+  index("idx_quotes_status").on(table.status),
+  index("idx_quotes_customer_email").on(table.customerEmail),
+  index("idx_quotes_user_status_date").on(table.userId, table.status, table.createdAt),
+]);
+
+// Customer portal access tokens (magic links for customers)
+export const customerPortalTokens = pgTable("customer_portal_tokens", {
+  id: text("id").primaryKey(), // UUID
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // The tradie who owns this customer
+
+  // Customer identification
+  customerEmail: varchar("customer_email").notNull(),
+  customerName: varchar("customer_name"),
+  customerPhone: varchar("customer_phone"),
+
+  // Token details
+  tokenHash: text("token_hash").notNull().unique(), // SHA256 hash of actual token
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+
+  // What customer can access
+  quoteIds: jsonb("quote_ids"), // Array of quote IDs customer can view
+  invoiceIds: jsonb("invoice_ids"), // Array of invoice IDs customer can view
+  jobIds: jsonb("job_ids"), // Array of job IDs customer can view
+
+  // Metadata
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_customer_tokens_hash").on(table.tokenHash),
+  index("idx_customer_tokens_email").on(table.customerEmail),
+  index("idx_customer_tokens_expires").on(table.expiresAt),
+]);
+
+// ========== TEAMS & COLLABORATION ==========
+
+// Team members - for Blue Teams tier
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+
+  // Business owner (the paying subscriber)
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Team member (who gets access to owner's data)
+  memberId: varchar("member_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Role and permissions
+  role: varchar("role").notNull().default("member"), // owner, admin, member, viewer
+  permissions: jsonb("permissions"), // Granular permissions: { invoices: ['view', 'create'], jobs: ['view'], quotes: ['view', 'edit'] }
+
+  // Status
+  status: varchar("status").notNull().default("active"), // active, inactive, suspended
+
+  // Metadata
+  invitedBy: varchar("invited_by").references(() => users.id),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_team_members_owner").on(table.ownerId),
+  index("idx_team_members_member").on(table.memberId),
+  index("idx_team_members_status").on(table.status),
+  // Ensure a user can't be added to the same team twice
+  index("idx_team_members_unique").on(table.ownerId, table.memberId),
+]);
+
+// Team invitations - pending team member invites
+export const teamInvitations = pgTable("team_invitations", {
+  id: serial("id").primaryKey(),
+
+  // Business owner sending the invite
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Invitee details
+  email: varchar("email").notNull(),
+  role: varchar("role").notNull().default("member"), // The role they'll have when they accept
+
+  // Invitation token (unique, secure)
+  token: text("token").notNull().unique(), // Secure random token for invite link
+  tokenHash: text("token_hash").notNull().unique(), // SHA256 hash for database lookup
+
+  // Status
+  status: varchar("status").notNull().default("pending"), // pending, accepted, expired, cancelled
+
+  // Who sent the invite
+  invitedBy: varchar("invited_by").notNull().references(() => users.id),
+
+  // Lifecycle
+  expiresAt: timestamp("expires_at").notNull(), // 7 days default
+  acceptedAt: timestamp("accepted_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_team_invites_owner").on(table.ownerId),
+  index("idx_team_invites_email").on(table.email),
+  index("idx_team_invites_token_hash").on(table.tokenHash),
+  index("idx_team_invites_status").on(table.status),
+]);
+
+// ========== CALENDAR & SCHEDULING ==========
+
+// Calendar events for job scheduling
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Event details
+  title: varchar("title").notNull(),
+  description: text("description"),
+  location: text("location"),
+
+  // Timing
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  allDay: boolean("all_day").default(false),
+  timezone: varchar("timezone").default("Australia/Sydney"),
+
+  // Links to business data
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  customerId: varchar("customer_id"),
+  customerName: varchar("customer_name"),
+
+  // Event type and status
+  eventType: varchar("event_type").default("job"), // job, meeting, appointment, reminder, block_time
+  status: varchar("status").default("scheduled"), // scheduled, in_progress, completed, cancelled
+  color: varchar("color").default("#3b82f6"), // Hex color for calendar display
+
+  // Recurring events
+  isRecurring: boolean("is_recurring").default(false),
+  recurrenceRule: text("recurrence_rule"), // iCal RRULE format
+  recurrenceEndDate: timestamp("recurrence_end_date"),
+  parentEventId: integer("parent_event_id").references((): any => calendarEvents.id),
+
+  // External calendar sync
+  googleEventId: varchar("google_event_id"),
+  outlookEventId: varchar("outlook_event_id"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  syncStatus: varchar("sync_status").default("not_synced"), // not_synced, synced, sync_failed
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_calendar_events_user").on(table.userId),
+  index("idx_calendar_events_start").on(table.startTime),
+  index("idx_calendar_events_job").on(table.jobId),
+  index("idx_calendar_events_google").on(table.googleEventId),
+  index("idx_calendar_events_outlook").on(table.outlookEventId),
+]);
+
+// Calendar sync settings for external calendars
+export const calendarSyncSettings = pgTable("calendar_sync_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+
+  // Google Calendar
+  googleEnabled: boolean("google_enabled").default(false),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiry: timestamp("google_token_expiry"),
+  googleCalendarId: varchar("google_calendar_id"), // Primary calendar ID
+  googleSyncToken: text("google_sync_token"), // For incremental sync
+  googleLastSync: timestamp("google_last_sync"),
+
+  // Outlook Calendar
+  outlookEnabled: boolean("outlook_enabled").default(false),
+  outlookAccessToken: text("outlook_access_token"),
+  outlookRefreshToken: text("outlook_refresh_token"),
+  outlookTokenExpiry: timestamp("outlook_token_expiry"),
+  outlookCalendarId: varchar("outlook_calendar_id"),
+  outlookDeltaToken: text("outlook_delta_token"), // For incremental sync
+  outlookLastSync: timestamp("outlook_last_sync"),
+
+  // Sync preferences
+  syncDirection: varchar("sync_direction").default("both"), // both, to_external, from_external
+  autoSync: boolean("auto_sync").default(true),
+  syncFrequency: integer("sync_frequency").default(15), // Minutes between syncs
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_calendar_sync_user").on(table.userId),
+]);
+
+// ========== DOCUMENTS & FILES ==========
+
+// Document storage for job photos, invoices, quotes, etc.
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // File details
+  fileName: varchar("file_name").notNull(),
+  originalFileName: varchar("original_file_name").notNull(),
+  fileSize: integer("file_size").notNull(), // in bytes
+  mimeType: varchar("mime_type").notNull(),
+  fileExtension: varchar("file_extension"),
+
+  // Storage location
+  storageProvider: varchar("storage_provider").notNull().default("local"), // local, s3, gcs
+  storagePath: text("storage_path").notNull(), // Full path or URL
+  storageKey: text("storage_key"), // S3/GCS object key
+  bucketName: varchar("bucket_name"), // S3/GCS bucket
+
+  // Document categorization
+  documentType: varchar("document_type").notNull(), // photo, invoice, quote, receipt, contract, other
+  category: varchar("category"), // before, after, progress, damage, etc.
+
+  // Relationships
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  quoteId: integer("quote_id").references(() => quotes.id, { onDelete: "set null" }),
+  expenseId: integer("expense_id").references(() => expenses.id, { onDelete: "set null" }),
+
+  // Metadata
+  title: varchar("title"),
+  description: text("description"),
+  tags: jsonb("tags"), // Array of tags for searching
+  isPublic: boolean("is_public").default(false), // Can be shared with customers
+
+  // Image-specific metadata
+  width: integer("width"),
+  height: integer("height"),
+  thumbnailPath: text("thumbnail_path"),
+
+  // Security
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  accessedAt: timestamp("accessed_at"),
+  downloadCount: integer("download_count").default(0),
+
+  // Lifecycle
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_documents_user").on(table.userId),
+  index("idx_documents_job").on(table.jobId),
+  index("idx_documents_invoice").on(table.invoiceId),
+  index("idx_documents_quote").on(table.quoteId),
+  index("idx_documents_type").on(table.documentType),
+  index("idx_documents_created").on(table.createdAt),
+]);
+
+// Document access logs for security and compliance
+export const documentAccessLogs = pgTable("document_access_logs", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+
+  // Access details
+  action: varchar("action").notNull(), // view, download, delete, share
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+
+  // Metadata
+  accessedAt: timestamp("accessed_at").defaultNow(),
+}, (table) => [
+  index("idx_doc_access_document").on(table.documentId),
+  index("idx_doc_access_user").on(table.userId),
+  index("idx_doc_access_time").on(table.accessedAt),
+]);
+
+// ========== AUTOMATION & AI ==========
+
+// Automation rules for AI-powered workflows
+export const automationRules = pgTable("automation_rules", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Rule details
+  name: varchar("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+
+  // Trigger configuration
+  triggerType: varchar("trigger_type").notNull(), // job_completed, invoice_sent, quote_accepted, days_after_job, etc.
+  triggerConditions: jsonb("trigger_conditions"), // Additional conditions
+
+  // Timing
+  delayDays: integer("delay_days").default(0), // Delay before executing action
+  delayHours: integer("delay_hours").default(0),
+
+  // Action configuration
+  actionType: varchar("action_type").notNull(), // send_email, send_sms, create_task, request_review
+  actionConfig: jsonb("action_config"), // Action-specific configuration
+
+  // AI-powered content
+  useAI: boolean("use_ai").default(false), // Use AI to generate message content
+  aiPrompt: text("ai_prompt"), // Prompt for AI content generation
+  staticContent: text("static_content"), // Pre-written content if not using AI
+
+  // Statistics
+  executionCount: integer("execution_count").default(0),
+  lastExecutedAt: timestamp("last_executed_at"),
+  successCount: integer("success_count").default(0),
+  failureCount: integer("failure_count").default(0),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_rules_user").on(table.userId),
+  index("idx_automation_rules_active").on(table.isActive),
+  index("idx_automation_rules_trigger").on(table.triggerType),
+]);
+
+// Automation execution log
+export const automationExecutions = pgTable("automation_executions", {
+  id: serial("id").primaryKey(),
+  ruleId: integer("rule_id").notNull().references(() => automationRules.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Execution details
+  status: varchar("status").notNull(), // pending, success, failed, skipped
+  errorMessage: text("error_message"),
+
+  // Context
+  triggerData: jsonb("trigger_data"), // Data that triggered the rule
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  quoteId: integer("quote_id").references(() => quotes.id, { onDelete: "set null" }),
+
+  // Generated content (if AI was used)
+  generatedContent: text("generated_content"),
+  aiTokensUsed: integer("ai_tokens_used"),
+
+  // Result
+  actionResult: jsonb("action_result"), // Result of the action (email sent, SMS delivered, etc.)
+
+  // Timing
+  scheduledFor: timestamp("scheduled_for"),
+  executedAt: timestamp("executed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_automation_exec_rule").on(table.ruleId),
+  index("idx_automation_exec_user").on(table.userId),
+  index("idx_automation_exec_status").on(table.status),
+  index("idx_automation_exec_scheduled").on(table.scheduledFor),
+]);
+
+// Review requests tracking
+export const reviewRequests = pgTable("review_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  jobId: integer("job_id").references(() => jobs.id, { onDelete: "set null" }),
+
+  // Customer details
+  customerName: varchar("customer_name").notNull(),
+  customerEmail: varchar("customer_email"),
+  customerPhone: varchar("customer_phone"),
+
+  // Request details
+  requestType: varchar("request_type").default("google_review"), // google_review, facebook_review, testimonial
+  sentVia: varchar("sent_via"), // email, sms, both
+  message: text("message"),
+
+  // Status
+  status: varchar("status").default("sent"), // sent, clicked, completed, declined
+  clickedAt: timestamp("clicked_at"),
+  completedAt: timestamp("completed_at"),
+  reviewLink: text("review_link"), // Link to leave review
+
+  // Review tracking
+  reviewReceived: boolean("review_received").default(false),
+  reviewRating: integer("review_rating"), // 1-5 stars
+  reviewText: text("review_text"),
+
+  // Metadata
+  sentAt: timestamp("sent_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_review_requests_user").on(table.userId),
+  index("idx_review_requests_job").on(table.jobId),
+  index("idx_review_requests_status").on(table.status),
+]);
 
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
@@ -357,7 +794,7 @@ export const aiResponses = pgTable("ai_responses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Token usage tracking table
+// Token usage tracking table (legacy - being phased out for ledger)
 export const tokenUsage = pgTable("token_usage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -368,10 +805,55 @@ export const tokenUsage = pgTable("token_usage", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Token ledger - provision/reconcile/rollback accounting
+export const tokenLedger = pgTable("token_ledger", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Transaction details
+  amount: integer("amount").notNull(), // negative for usage, positive for grants/refunds
+  balanceAfter: integer("balance_after").notNull(), // running balance after this entry
+  reason: varchar("reason", { length: 50 }).notNull(), // 'monthly_grant', 'advisor_chat', 'rollover', 'purchase', 'provision', 'reconciliation', 'rollback'
+
+  // Context metadata
+  metadata: jsonb("metadata"), // {advisor: 'financial', messageId: 123, openaiUsage: {...}, estimated: true, etc.}
+
+  // Idempotency & deduplication
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
+
+  // Audit trail
+  transactionId: varchar("transaction_id", { length: 255 }).notNull(), // trace ID for grouping provision→reconcile→rollback
+  reconciliationStatus: varchar("reconciliation_status", { length: 20 }).default("pending"), // 'pending', 'confirmed', 'adjusted', 'rolled_back'
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Token usage alerts tracking (for one-per-month 80% alerts)
+export const tokenAlerts = pgTable("token_alerts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  alertType: varchar("alert_type", { length: 50 }).notNull(), // '80_percent', '100_percent'
+  month: varchar("month", { length: 7 }).notNull(), // 'YYYY-MM' format
+  balance: integer("balance").notNull(), // balance at time of alert
+  limit: integer("limit").notNull(), // monthly limit at time of alert
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+// Indexes for performance
+// CREATE INDEX idx_token_ledger_user ON token_ledger(user_id, created_at DESC);
+// CREATE INDEX idx_token_ledger_reconcile ON token_ledger(reconciliation_status) WHERE reconciliation_status = 'pending';
+// CREATE INDEX idx_token_ledger_transaction ON token_ledger(transaction_id);
+// CREATE UNIQUE INDEX idx_token_alerts_user_month ON token_alerts(user_id, alert_type, month);
+
 export type AIResponse = typeof aiResponses.$inferSelect;
 export type InsertAIResponse = typeof aiResponses.$inferInsert;
 export type TokenUsage = typeof tokenUsage.$inferSelect;
 export type InsertTokenUsage = typeof tokenUsage.$inferInsert;
+export type TokenLedgerEntry = typeof tokenLedger.$inferSelect;
+export type InsertTokenLedgerEntry = typeof tokenLedger.$inferInsert;
+export type TokenAlert = typeof tokenAlerts.$inferSelect;
+export type InsertTokenAlert = typeof tokenAlerts.$inferInsert;
 export type InsertJob = typeof jobs.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type InsertTrialEmail = typeof trialEmails.$inferInsert;
@@ -381,10 +863,14 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
+export type InsertQuote = typeof quotes.$inferInsert;
+export type Quote = typeof quotes.$inferSelect;
 export type InsertExpense = typeof expenses.$inferInsert;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertCustomerPortalToken = typeof customerPortalTokens.$inferInsert;
+export type CustomerPortalToken = typeof customerPortalTokens.$inferSelect;
 
 // Public waitlist table for general interest signups (password gate)
 export const publicWaitlistTable = pgTable("public_waitlist", {
@@ -420,11 +906,32 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   updatedAt: true,
 }).extend({
   subtotal: z.union([z.string(), z.number()]).transform(val => String(val)),
-  gst: z.union([z.string(), z.number()]).transform(val => String(val)), 
+  gst: z.union([z.string(), z.number()]).transform(val => String(val)),
   total: z.union([z.string(), z.number()]).transform(val => String(val))
 });
 
-
+export const insertQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  quoteNumber: true, // Auto-generated
+  yearSequence: true, // Auto-generated
+  createdAt: true,
+  updatedAt: true,
+  sentAt: true,
+  viewedAt: true,
+  respondedAt: true,
+  convertedAt: true,
+}).extend({
+  subtotal: z.union([z.string(), z.number()]).transform(val => String(val)),
+  gst: z.union([z.string(), z.number()]).transform(val => String(val)),
+  total: z.union([z.string(), z.number()]).transform(val => String(val)),
+  lineItems: z.array(z.object({
+    description: z.string(),
+    quantity: z.number(),
+    rate: z.number(),
+    amount: z.number(),
+    type: z.enum(['labor', 'materials']).optional(),
+  })),
+});
 
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
@@ -541,13 +1048,81 @@ export const waitlistEntries = pgTable("waitlist_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Enhanced analytics system for AI learning and business insights
 export const analyticsEvents = pgTable("analytics_events", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id"),
-  eventType: varchar("event_type").notNull(),
-  eventData: text("event_data"), // JSON string
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id"), // Track user sessions
+  eventType: varchar("event_type", { length: 100 }).notNull(), // login, ai_chat, invoice_created, etc
+  eventCategory: varchar("event_category", { length: 50 }), // user, business, system, ai
+  eventData: jsonb("event_data"), // Structured event data
+  metadata: jsonb("metadata"), // Device, browser, location, etc
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_analytics_user_id").on(table.userId),
+  index("idx_analytics_event_type").on(table.eventType),
+  index("idx_analytics_created_at").on(table.createdAt),
+  index("idx_analytics_session_id").on(table.sessionId),
+]);
+
+// Session tracking for user behavior analysis
+export const analyticsSessions = pgTable("analytics_sessions", {
+  id: varchar("id").primaryKey(), // UUID
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  endedAt: timestamp("ended_at"),
+  duration: integer("duration"), // seconds
+  pageViews: integer("page_views").default(0),
+  eventsCount: integer("events_count").default(0),
+  device: varchar("device", { length: 50 }), // mobile, tablet, desktop
+  browser: varchar("browser", { length: 50 }),
+  os: varchar("os", { length: 50 }),
+  country: varchar("country", { length: 2 }), // ISO code
+  ipAddress: varchar("ip_address", { length: 45 }),
+}, (table) => [
+  index("idx_sessions_user_id").on(table.userId),
+  index("idx_sessions_started_at").on(table.startedAt),
+]);
+
+// Aggregate metrics for fast querying and AI training
+export const analyticsMetrics = pgTable("analytics_metrics", {
+  id: serial("id").primaryKey(),
+  metricDate: timestamp("metric_date").notNull(), // Date this metric represents
+  metricType: varchar("metric_type", { length: 100 }).notNull(), // daily_active_users, revenue, etc
+  metricValue: decimal("metric_value", { precision: 15, scale: 2 }).notNull(),
+  dimensions: jsonb("dimensions"), // Additional breakdown (e.g., by plan, country)
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_metrics_date_type").on(table.metricDate, table.metricType),
+]);
+
+// Business KPIs for dashboard and AI insights
+export const businessMetrics = pgTable("business_metrics", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  metricDate: timestamp("metric_date").notNull(),
+  // Revenue metrics
+  totalRevenue: decimal("total_revenue", { precision: 15, scale: 2 }).default("0"),
+  invoicesSent: integer("invoices_sent").default(0),
+  invoicesPaid: integer("invoices_paid").default(0),
+  paymentsReceived: integer("payments_received").default(0),
+  // Activity metrics
+  jobsCreated: integer("jobs_created").default(0),
+  jobsCompleted: integer("jobs_completed").default(0),
+  quotesCreated: integer("quotes_created").default(0),
+  quotesAccepted: integer("quotes_accepted").default(0),
+  // AI usage
+  aiChatsCount: integer("ai_chats_count").default(0),
+  tokensUsed: integer("tokens_used").default(0),
+  // Customer metrics
+  newCustomers: integer("new_customers").default(0),
+  repeatCustomers: integer("repeat_customers").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_business_metrics_user_date").on(table.userId, table.metricDate),
+]);
 
 // Beta schemas
 export const insertBetaInviteSchema = createInsertSchema(betaInvites).omit({
@@ -610,6 +1185,12 @@ export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedbackSubmissions.$inferSelect;
 export type InsertAnalyticsEvent = z.infer<typeof insertAnalyticsEventSchema>;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
+export type InsertAnalyticsSession = typeof analyticsSessions.$inferInsert;
+export type AnalyticsMetric = typeof analyticsMetrics.$inferSelect;
+export type InsertAnalyticsMetric = typeof analyticsMetrics.$inferInsert;
+export type BusinessMetric = typeof businessMetrics.$inferSelect;
+export type InsertBusinessMetric = typeof businessMetrics.$inferInsert;
 export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type InsertRoadmapItem = z.infer<typeof insertRoadmapItemSchema>;
@@ -626,6 +1207,299 @@ export type RoadmapVote = typeof roadmapVotes.$inferSelect;
 export type AuthSession = typeof authSessions.$inferSelect;
 export type InsertAuthSession = typeof authSessions.$inferInsert;
 
-// Magic link token types  
+// Magic link token types
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type InsertMagicLinkToken = typeof magicLinkTokens.$inferInsert;
+
+// Team member types
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  joinedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Team invitation types
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertTeamInvitation = typeof teamInvitations.$inferInsert;
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+  cancelledAt: true,
+});
+
+// Calendar event types
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSyncedAt: true,
+});
+
+// Calendar sync settings types
+export type CalendarSyncSettings = typeof calendarSyncSettings.$inferSelect;
+export type InsertCalendarSyncSettings = typeof calendarSyncSettings.$inferInsert;
+export const insertCalendarSyncSettingsSchema = createInsertSchema(calendarSyncSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  googleLastSync: true,
+  outlookLastSync: true,
+});
+
+// Document types
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  accessedAt: true,
+  downloadCount: true,
+});
+
+// Document access log types
+export type DocumentAccessLog = typeof documentAccessLogs.$inferSelect;
+export type InsertDocumentAccessLog = typeof documentAccessLogs.$inferInsert;
+
+// Automation rule types
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = typeof automationRules.$inferInsert;
+export const insertAutomationRuleSchema = createInsertSchema(automationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastExecutedAt: true,
+  executionCount: true,
+  successCount: true,
+  failureCount: true,
+});
+
+// Automation execution types
+export type AutomationExecution = typeof automationExecutions.$inferSelect;
+export type InsertAutomationExecution = typeof automationExecutions.$inferInsert;
+export const insertAutomationExecutionSchema = createInsertSchema(automationExecutions).omit({
+  id: true,
+  executedAt: true,
+});
+
+// Review request types
+export type ReviewRequest = typeof reviewRequests.$inferSelect;
+export type InsertReviewRequest = typeof reviewRequests.$inferInsert;
+export const insertReviewRequestSchema = createInsertSchema(reviewRequests).omit({
+  id: true,
+  createdAt: true,
+  clickedAt: true,
+  completedAt: true,
+});
+
+// ========== ACCOUNTING & TAX ==========
+
+// User tax settings and preferences
+export const taxSettings = pgTable("tax_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+
+  // Business registration
+  abn: varchar("abn", { length: 11 }), // Australian Business Number
+  gstRegistered: boolean("gst_registered").default(false),
+  gstRegistrationDate: timestamp("gst_registration_date"),
+
+  // Tax year settings
+  financialYearEnd: varchar("financial_year_end").default("30-06"), // DD-MM format
+  accountingBasis: varchar("accounting_basis").default("accrual"), // accrual or cash
+
+  // BAS settings
+  basReportingPeriod: varchar("bas_reporting_period").default("quarterly"), // monthly, quarterly, annually
+  nextBasDueDate: timestamp("next_bas_due_date"),
+
+  // Tax rates (can be overridden)
+  gstRate: decimal("gst_rate", { precision: 5, scale: 2 }).default("10.00"), // 10% GST in Australia
+
+  // Accountant details
+  accountantName: varchar("accountant_name"),
+  accountantEmail: varchar("accountant_email"),
+  accountantPhone: varchar("accountant_phone"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Quarterly BAS (Business Activity Statement) reports
+export const basReports = pgTable("bas_reports", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Reporting period
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  quarter: varchar("quarter").notNull(), // Q1 2025, Q2 2025, etc.
+
+  // GST calculations (all in cents for precision)
+  g1TotalSales: decimal("g1_total_sales", { precision: 15, scale: 2 }).default("0"), // Total sales including GST
+  g2ExportSales: decimal("g2_export_sales", { precision: 15, scale: 2 }).default("0"), // GST-free exports
+  g3OtherGstFree: decimal("g3_other_gst_free", { precision: 15, scale: 2 }).default("0"), // Other GST-free sales
+  g4InputTaxed: decimal("g4_input_taxed", { precision: 15, scale: 2 }).default("0"), // Input taxed sales
+
+  g10CapitalPurchases: decimal("g10_capital_purchases", { precision: 15, scale: 2 }).default("0"), // Capital purchases
+  g11NonCapitalPurchases: decimal("g11_non_capital_purchases", { precision: 15, scale: 2 }).default("0"), // Non-capital purchases
+
+  // Calculated fields
+  g1aGstOnSales: decimal("g1a_gst_on_sales", { precision: 15, scale: 2 }).default("0"), // GST on sales (÷11)
+  g1bGstOnPurchases: decimal("g1b_gst_on_purchases", { precision: 15, scale: 2 }).default("0"), // GST credits
+
+  // Final BAS amount
+  totalGstPayable: decimal("total_gst_payable", { precision: 15, scale: 2 }).default("0"), // Amount to pay (or refund if negative)
+
+  // Status tracking
+  status: varchar("status").notNull().default("draft"), // draft, submitted, paid
+  submittedAt: timestamp("submitted_at"),
+  paidAt: timestamp("paid_at"),
+
+  // Export
+  pdfUrl: text("pdf_url"), // Generated BAS PDF
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_bas_user_period").on(table.userId, table.periodEnd),
+]);
+
+// Tax-deductible expense categories
+export const taxCategories = pgTable("tax_categories", {
+  id: serial("id").primaryKey(),
+
+  // Category details
+  name: varchar("name").notNull(), // e.g., "Vehicle Expenses", "Tools & Equipment"
+  description: text("description"),
+  category: varchar("category").notNull(), // Standard category name
+
+  // Tax treatment
+  deductible: boolean("deductible").default(true),
+  deductionRate: decimal("deduction_rate", { precision: 5, scale: 2 }).default("100.00"), // Percentage deductible
+
+  // ATO reference
+  atoCategory: varchar("ato_category"), // ATO category code
+  requiresReceipt: boolean("requires_receipt").default(true),
+
+  // Business rules
+  isDefault: boolean("is_default").default(false), // System default categories
+
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_tax_categories_category").on(table.category),
+]);
+
+// AI-suggested tax deductions
+export const taxDeductions = pgTable("tax_deductions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+
+  // Suggestion details
+  suggestionType: varchar("suggestion_type").notNull(), // missing_expense, unclaimed_deduction, tax_tip
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+
+  // Potential savings
+  estimatedAmount: decimal("estimated_amount", { precision: 10, scale: 2 }),
+  estimatedSaving: decimal("estimated_saving", { precision: 10, scale: 2 }),
+
+  // Related records
+  expenseId: integer("expense_id").references(() => expenses.id),
+  categoryId: integer("category_id").references(() => taxCategories.id),
+
+  // AI context
+  aiReasoning: text("ai_reasoning"), // Why Claude suggested this
+  confidence: decimal("confidence", { precision: 5, scale: 2 }), // 0-100
+
+  // User action
+  status: varchar("status").default("pending"), // pending, accepted, dismissed
+  userNotes: text("user_notes"),
+  actionedAt: timestamp("actioned_at"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_tax_deductions_user_status").on(table.userId, table.status),
+]);
+
+// Tax category types
+export type TaxCategory = typeof taxCategories.$inferSelect;
+export type InsertTaxCategory = typeof taxCategories.$inferInsert;
+
+// Tax settings types
+export type TaxSettings = typeof taxSettings.$inferSelect;
+export type InsertTaxSettings = typeof taxSettings.$inferInsert;
+export const insertTaxSettingsSchema = createInsertSchema(taxSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// BAS report types
+export type BasReport = typeof basReports.$inferSelect;
+export type InsertBasReport = typeof basReports.$inferInsert;
+export const insertBasReportSchema = createInsertSchema(basReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  submittedAt: true,
+  paidAt: true,
+});
+
+// Tax deduction types
+export type TaxDeduction = typeof taxDeductions.$inferSelect;
+export type InsertTaxDeduction = typeof taxDeductions.$inferInsert;
+
+// ========== PRODUCTION HARDENING ==========
+
+// Idempotency keys - Prevent duplicate operations
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  id: text("id").primaryKey(), // Format: "{scope}:{identifier}"
+  scope: text("scope").notNull(), // quote_accept, invoice_update, stripe_webhook, etc.
+  resourceId: text("resource_id"), // ID of resource being operated on
+  requestFingerprint: text("request_fingerprint"), // Hash of request params
+  responseData: jsonb("response_data"), // Cached response for replay
+  status: text("status").notNull().default("processing"), // processing, completed, failed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at").notNull(), // Auto-cleanup old keys
+}, (table) => [
+  index("idx_idempotency_scope").on(table.scope, table.createdAt),
+  index("idx_idempotency_expires").on(table.expiresAt),
+]);
+
+// Webhook events - Track external webhooks (Stripe, Twilio, etc.)
+export const webhookEvents = pgTable("webhook_events", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull(), // stripe, twilio, sendgrid
+  providerEventId: text("provider_event_id").notNull(), // evt_xxx from Stripe
+  eventType: text("event_type").notNull(), // payment_intent.succeeded, etc.
+  eventData: jsonb("event_data").notNull(), // Full webhook payload
+  status: text("status").notNull().default("pending"), // pending, processing, processed, failed
+  processedAt: timestamp("processed_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_webhook_events_status").on(table.status, table.createdAt),
+  index("idx_webhook_events_provider_type").on(table.provider, table.eventType),
+  // Unique constraint to prevent duplicate processing of same event
+  unique("webhook_events_provider_event_unique").on(table.provider, table.providerEventId),
+]);
+
+// Idempotency key types
+export type IdempotencyKey = typeof idempotencyKeys.$inferSelect;
+export type InsertIdempotencyKey = typeof idempotencyKeys.$inferInsert;
+export const insertIdempotencyKeySchema = createInsertSchema(idempotencyKeys);
+export const selectIdempotencyKeySchema = createInsertSchema(idempotencyKeys);
+
+// Webhook event types
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+export const insertWebhookEventSchema = createInsertSchema(webhookEvents);
+export const selectWebhookEventSchema = createInsertSchema(webhookEvents);

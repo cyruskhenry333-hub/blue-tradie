@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { db } from '../db';
 import { aiResponses, tokenUsage, users, type User } from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { tokenLedgerService } from './tokenLedgerService';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -31,28 +32,20 @@ interface ChatMessage {
 export class AIService {
   
   /**
-   * Main chat method - implements hybrid fallback system
+   * Main chat method - implements hybrid fallback system with ledger-based token tracking
    */
   async chat(
-    userId: string, 
-    messages: ChatMessage[], 
-    agentType: 'accountant' | 'marketer' | 'business_coach' | 'legal' = 'business_coach'
+    userId: string,
+    messages: ChatMessage[],
+    agentType: 'accountant' | 'marketer' | 'business_coach' | 'legal' | 'operations' | 'technology' = 'business_coach'
   ): Promise<AIResponse> {
-    
+
     const userMessage = messages[messages.length - 1]?.content;
     if (!userMessage) {
       throw new Error('No user message provided');
     }
 
-    // Step 1: Check if user has tokens remaining
-    const user = await this.getUserWithTokenBalance(userId);
-    const monthlyLimit = TOKEN_LIMITS[user.subscriptionTier as keyof typeof TOKEN_LIMITS] || TOKEN_LIMITS.demo;
-    
-    if (user.tokenBalance <= 0) {
-      throw new Error('Token limit exceeded. Please upgrade your plan or purchase additional tokens.');
-    }
-
-    // Step 2: Check cached responses first
+    // Step 1: Check cached responses first (free, no token cost)
     const cachedResponse = await this.findCachedResponse(userMessage, agentType);
     if (cachedResponse) {
       return {
@@ -63,16 +56,51 @@ export class AIService {
       };
     }
 
-    // Step 3: Call OpenAI API
-    const aiResponse = await this.callOpenAI(messages, agentType);
-    
-    // Step 4: Save response to cache for future use
-    await this.cacheResponse(userMessage, aiResponse.content, agentType);
-    
-    // Step 5: Track token usage
-    await this.trackTokenUsage(userId, aiResponse.tokens_used, aiResponse.cost_aud);
-    
-    return aiResponse;
+    // Step 2: Provision tokens (pessimistic lock)
+    const estimatedTokens = 150; // Reasonable estimate for gpt-4o-mini with max_tokens=200
+    let provision;
+
+    try {
+      provision = await tokenLedgerService.provisionTokens(userId, estimatedTokens, {
+        advisor: agentType,
+      });
+    } catch (error: any) {
+      // Insufficient balance
+      throw new Error(error.message || 'Unable to provision tokens. Please check your balance.');
+    }
+
+    // Step 3: Call OpenAI API (wrapped in try/catch for rollback)
+    let aiResponse;
+    try {
+      aiResponse = await this.callOpenAI(messages, agentType);
+
+      // Step 4: Reconcile with actual usage
+      await tokenLedgerService.reconcileTokens(
+        provision.provisionId,
+        provision.transactionId,
+        aiResponse.tokens_used,
+        {
+          model: 'gpt-4o-mini',
+          promptTokens: aiResponse.tokens_used, // Simplified - you can track prompt/completion separately
+          completionTokens: 0,
+        }
+      );
+
+      // Step 5: Save response to cache for future use
+      await this.cacheResponse(userMessage, aiResponse.content, agentType);
+
+      return aiResponse;
+
+    } catch (error: any) {
+      // Step 6: Rollback provision on error
+      await tokenLedgerService.rollbackProvision(
+        provision.provisionId,
+        provision.transactionId,
+        error.message || 'OpenAI API call failed'
+      );
+
+      throw new Error('Failed to generate AI response. Your tokens have been refunded. Please try again.');
+    }
   }
 
   /**

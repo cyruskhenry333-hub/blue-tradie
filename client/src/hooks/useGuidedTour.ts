@@ -92,6 +92,27 @@ export function useGuidedTour() {
     };
   }, []);
 
+  // Auto-start tour for first-time login users
+  useEffect(() => {
+    if (!isAuthenticated || !user || !shouldShowTour) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFreshLogin = urlParams.get('fresh') === '1';
+    const tourCompleted = localStorage.getItem('blue-tradie-tour-completed') === 'true';
+    
+    if (isFreshLogin && !tourCompleted && user.isOnboarded) {
+      // Clear the URL parameter for cleaner experience
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Start the tour automatically for first-time users
+      console.log('[TOUR] First-time login detected, starting welcome tour');
+      setTimeout(() => {
+        startTour();
+      }, 1000); // Small delay to let the page load
+    }
+  }, [isAuthenticated, user, shouldShowTour]);
+
   const startTour = () => {
     localStorage.removeItem('blue-tradie-tour-completed');
     localStorage.setItem('blue-tradie-tour-active-step', '0');

@@ -17,6 +17,7 @@ import BetaSignup from "@/pages/beta-signup";
 import ThreeTierBetaSignup from "@/components/ThreeTierBetaSignup";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminRoadmap from "@/pages/admin-roadmap";
+import AdminUsers from "@/pages/admin-users";
 import PublicRoadmap from "@/pages/public-roadmap";
 import Profile from "@/pages/profile";
 import GoalsOnboarding from "@/pages/goals-onboarding";
@@ -49,6 +50,14 @@ import TestEmailButton from "@/pages/test-email-button";
 import AIAdvisors from "@/pages/ai-advisors";
 import TradieDirectory from "@/pages/tradie-directory";
 import Automation from "@/pages/automation";
+import BusinessInsights from "@/pages/business-insights";
+import Quotes from "@/pages/quotes";
+import CustomerPortal from "@/pages/customer-portal";
+import Team from "@/pages/team";
+import CalendarPage from "@/pages/calendar";
+import DocumentsPage from "@/pages/documents";
+import Tax from "@/pages/tax";
+import VoiceQuote from "@/pages/voice-quote";
 import Signup from "@/pages/signup";
 import Welcome from "@/pages/welcome";
 import Terms from "@/pages/terms";
@@ -57,11 +66,17 @@ import Contact from "@/pages/contact";
 import Help from "@/pages/help";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { VersionFooter } from "@/components/VersionFooter";
+import { initPWA } from "@/utils/pwa";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { showTour, closeTour } = useGuidedTour();
+
+  // Initialize PWA on mount
+  useEffect(() => {
+    initPWA();
+  }, []);
 
   // Check if user needs onboarding flow  
   useEffect(() => {
@@ -103,7 +118,8 @@ function Router() {
             <Route path="/test-email-button" component={TestEmailButton} />
             <Route path="/roadmap" component={PublicRoadmap} />
             <Route path="/client/:jobId/:token" component={ClientPortal} />
-            
+            <Route path="/portal" component={CustomerPortal} />
+
             {/* Redirects */}
             <Route path="/vip" component={() => { window.location.href = '/demo'; return null; }} />
             <Route path="/early-access" component={() => { window.location.href = '/demo'; return null; }} />
@@ -126,6 +142,7 @@ function Router() {
                 <Route path="/" component={Dashboard} />
                 <Route path="/chat/:agentType?" component={Chat} />
                 <Route path="/invoices" component={Invoices} />
+                <Route path="/quotes" component={Quotes} />
                 <Route path="/jobs" component={JobsPage} />
                 <Route path="/expenses" component={ExpensesPage} />
                 <Route path="/logbook" component={Logbook} />
@@ -134,6 +151,7 @@ function Router() {
                 <Route path="/subscribe" component={Subscribe} />
                 <Route path="/admin" component={AdminAnalytics} />
                 <Route path="/admin/roadmap" component={AdminRoadmap} />
+                <Route path="/admin/users" component={AdminUsers} />
                 <Route path="/admin-usage" component={AdminUsagePage} />
                 <Route path="/roadmap" component={PublicRoadmap} />
                 <Route path="/migration" component={Migration} />
@@ -141,8 +159,14 @@ function Router() {
                 <Route path="/testimonial" component={TestimonialPage} />
                 <Route path="/referrals" component={ReferralDashboard} />
                 <Route path="/ai-advisors" component={AIAdvisors} />
+                <Route path="/insights" component={BusinessInsights} />
                 <Route path="/directory" component={TradieDirectory} />
                 <Route path="/automation" component={Automation} />
+                <Route path="/team" component={Team} />
+                <Route path="/calendar" component={CalendarPage} />
+                <Route path="/documents" component={DocumentsPage} />
+                <Route path="/tax" component={Tax} />
+                <Route path="/voice-quote" component={VoiceQuote} />
 
               </>
             )}

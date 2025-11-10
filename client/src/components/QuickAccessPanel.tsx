@@ -3,16 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { 
-  Plus, 
-  MessageSquare, 
-  FileText, 
-  Users, 
-  Receipt, 
+import {
+  Plus,
+  MessageSquare,
+  FileText,
+  Users,
+  Receipt,
   Settings,
   Sparkles,
   Target,
-  Compass
+  Compass,
+  FileSignature,
+  Calendar,
+  FolderOpen,
+  Calculator
 } from "lucide-react";
 
 export default function QuickAccessPanel() {
@@ -28,6 +32,16 @@ export default function QuickAccessPanel() {
       color: "bg-blue-500 hover:bg-blue-600",
       shortcut: "I",
       className: "invoices-link"
+    },
+    {
+      id: "quotes",
+      title: "Quotes",
+      description: "Create and manage quotes",
+      icon: FileSignature,
+      href: "/quotes",
+      color: "bg-cyan-500 hover:bg-cyan-600",
+      shortcut: "U",
+      className: "quotes-link"
     },
     {
       id: "add-job",
@@ -75,6 +89,42 @@ export default function QuickAccessPanel() {
       href: "/roadmap",
       color: "bg-indigo-500 hover:bg-indigo-600",
       shortcut: "R"
+    },
+    {
+      id: "team",
+      title: "Team",
+      description: "Manage your team members",
+      icon: Users,
+      href: "/team",
+      color: "bg-teal-500 hover:bg-teal-600",
+      shortcut: "T"
+    },
+    {
+      id: "calendar",
+      title: "Calendar",
+      description: "Schedule and track events",
+      icon: Calendar,
+      href: "/calendar",
+      color: "bg-red-500 hover:bg-red-600",
+      shortcut: "C"
+    },
+    {
+      id: "documents",
+      title: "Documents",
+      description: "Manage files and photos",
+      icon: FolderOpen,
+      href: "/documents",
+      color: "bg-yellow-500 hover:bg-yellow-600",
+      shortcut: "D"
+    },
+    {
+      id: "tax",
+      title: "Tax & BAS",
+      description: "GST and tax management",
+      icon: Calculator,
+      href: "/tax",
+      color: "bg-green-500 hover:bg-green-600",
+      shortcut: "X"
     }
   ];
 

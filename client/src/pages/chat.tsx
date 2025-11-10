@@ -52,11 +52,13 @@ export default function Chat() {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <img 
-                  src={blueTradieLogo} 
-                  alt="Blue Tradie Logo" 
-                  className="h-16 w-16 md:h-18 md:w-18 object-contain"
-                />
+                <Link href="/dashboard">
+                  <img 
+                    src={blueTradieLogo} 
+                    alt="Blue Tradie Logo" 
+                    className="h-16 w-16 md:h-18 md:w-18 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </Link>
                 <div>
                   <h1 className="text-2xl font-bold text-tradie-blue">Blue Tradie</h1>
                   <p className="text-sm text-gray-600">AI Business Team</p>
@@ -106,15 +108,19 @@ export default function Chat() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {user?.businessLogo && user?.businessName ? (
-                <div className="w-14 h-14 md:w-16 md:h-16 bg-tradie-blue rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm md:text-base">{user.businessName.slice(0, 2).toUpperCase()}</span>
-                </div>
+                <Link href="/dashboard">
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-tradie-blue rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                    <span className="text-white font-bold text-sm md:text-base">{user.businessName.slice(0, 2).toUpperCase()}</span>
+                  </div>
+                </Link>
               ) : (
-                <img 
-                  src={blueTradieLogo} 
-                  alt="Blue Tradie Logo" 
-                  className="h-14 w-14 md:h-16 md:w-16 object-contain"
-                />
+                <Link href="/dashboard">
+                  <img 
+                    src={blueTradieLogo} 
+                    alt="Blue Tradie Logo" 
+                    className="h-14 w-14 md:h-16 md:w-16 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </Link>
               )}
               <div>
                 <h1 className="text-xl font-bold text-tradie-blue">

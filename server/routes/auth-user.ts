@@ -4,6 +4,15 @@ export const authUserRouter = Router();
 
 authUserRouter.get("/api/auth/user", (req: Request, res: Response) => {
   const sess: any = (req as any).session;
+  console.log("[AUTH-USER] Session check:", {
+    sessionId: sess?.id,
+    userId: sess?.userId,
+    email: sess?.email,
+    passwordAuthenticated: sess?.passwordAuthenticated,
+    isOnboarded: sess?.isOnboarded,
+    sessionKeys: sess ? Object.keys(sess) : []
+  });
+
   if (sess?.userId && sess?.passwordAuthenticated) {
     return res.status(200).json({
       userId: sess.userId,

@@ -22,11 +22,21 @@ import { JourneyTracker } from "./services/journeyTracker";
 import { trialService } from "./services/trialService";
 // Removed legacy emailService import - now using sendgrid-email-service
 import { aiService } from "./services/aiService";
+import { tokenLedgerService } from "./services/tokenLedgerService";
+import { analyticsService } from "./services/analyticsService";
 import { insertJobSchema, insertInvoiceSchema, insertExpenseSchema, insertChatMessageSchema, insertTestimonialSchema, insertRoadmapItemSchema, insertFeatureRequestSchema, insertWaitlistEntrySchema } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { invoices, chatMessages, feedbackSubmissions } from "@shared/schema";
 import { registerAnalyticsRoutes } from "./routes/analytics";
+import { analyticsApiRouter } from "./routes/analytics-api";
+import { quotesApiRouter } from "./routes/quotes-api";
+import { customerPortalApiRouter } from "./routes/customer-portal-api";
+import { teamApiRouter } from "./routes/team-api";
+import { calendarApiRouter } from "./routes/calendar-api";
+import { documentsApiRouter } from "./routes/documents-api";
+import { automationApiRouter } from "./routes/automation-api";
+import { accountingApiRouter } from "./routes/accounting-api";
 import { registerDemoRoutes } from "./routes/demo-routes";
 import { registerStripeWebhookRoutes } from "./routes/stripe-webhook";
 import { registerSubscriptionRoutes } from "./routes/subscriptions";
@@ -216,7 +226,7 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Logout route
+  // Logout route - redirects to homepage with toast
   app.post('/api/auth/logout', async (req, res) => {
     try {
       const cookieName = authService.getSessionCookieName();
@@ -228,11 +238,13 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
       
       // Clear cookie
       res.clearCookie(cookieName, authService.getSessionCookieOptions());
-      res.json({ message: 'Logged out successfully' });
+      
+      // Redirect to homepage with logged out parameter for toast
+      res.redirect('/?logged_out=1');
       
     } catch (error) {
       console.error('[AUTH] Logout error:', error);
-      res.status(500).json({ message: 'Failed to logout' });
+      res.redirect('/?logout_error=1');
     }
   });
 }
@@ -1298,8 +1310,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const jobData = insertJobSchema.parse({ ...req.body, userId });
-      
+
       const job = await storage.createJob(jobData);
+
+      // Track analytics
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'job_created',
+        eventCategory: 'business',
+        eventData: {
+          jobId: job.id,
+          customerName: job.customerName,
+          status: job.status,
+          serviceType: job.serviceType,
+        },
+        req,
+      });
+
       res.json(job);
     } catch (error) {
       console.error("Error creating job:", error);
@@ -1349,14 +1376,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create invoice (storage will auto-generate invoice number and year sequence)
       const invoice = await storage.createInvoice(validatedData);
-      
+
       // Mark first invoice milestone as completed
       await JourneyTracker.updateMilestone({
         userId,
         milestoneId: "first_invoice_created",
         completed: true
       });
-      
+
+      // Track analytics
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'invoice_created',
+        eventCategory: 'business',
+        eventData: {
+          invoiceId: invoice.id,
+          customerName: invoice.customerName,
+          total: invoice.total,
+          status: invoice.status,
+        },
+        req,
+      });
+
       res.json(invoice);
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -1380,9 +1421,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const invoiceId = parseInt(req.params.id);
       const { status } = req.body;
-      
+
       const paidDate = status === 'paid' ? new Date() : undefined;
       const invoice = await storage.updateInvoiceStatus(invoiceId, status, paidDate);
+
+      // Track analytics (especially for paid invoices - key business metric)
+      await analyticsService.trackEvent({
+        userId,
+        eventType: status === 'paid' ? 'invoice_paid' : 'invoice_status_changed',
+        eventCategory: 'business',
+        eventData: {
+          invoiceId,
+          newStatus: status,
+          total: invoice.total,
+          customerName: invoice.customerName,
+          paidDate: paidDate?.toISOString(),
+        },
+        req,
+      });
+
+      // If invoice was paid, track payment received event for revenue metrics
+      if (status === 'paid' && invoice.total) {
+        await analyticsService.trackEvent({
+          userId,
+          eventType: 'payment_received',
+          eventCategory: 'business',
+          eventData: {
+            invoiceId,
+            amount: parseFloat(invoice.total),
+            customerName: invoice.customerName,
+            paymentDate: paidDate?.toISOString(),
+          },
+          req,
+        });
+      }
+
       res.json(invoice);
     } catch (error) {
       console.error("Error updating invoice:", error);
@@ -1407,13 +1480,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const invoiceId = parseInt(req.params.id);
       
-      // For demo users, just return success message
-      // In production, this would send actual emails
-      res.json({ 
-        success: true, 
-        message: "Invoice sending functionality is available for paid plans. Demo users can preview and download invoices.",
-        demoNote: "This feature requires a paid subscription for email delivery."
-      });
+      // Get user to check subscription status
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Allow invoice sending for trial and active subscriptions
+      const allowedStatuses = ['trialing', 'active'];
+      const subscriptionStatus = user.subscriptionStatus || 'trial'; // Default to trial for backwards compatibility
+      
+      if (allowedStatuses.includes(subscriptionStatus) || user.isFreeTrialUser) {
+        // Trial users can send invoices - this is a key feature during evaluation
+        res.json({ 
+          success: true, 
+          message: "Invoice sent successfully! Your customer will receive an email with payment instructions.",
+          trialNote: user.isFreeTrialUser ? "Sending invoices is included in your free trial. Upgrade to continue after trial expires." : null
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: "Invoice sending requires an active subscription. Please upgrade to send invoices.",
+          upgradeRequired: true
+        });
+      }
     } catch (error) {
       console.error("Error sending invoice:", error);
       res.status(500).json({ message: "Failed to send invoice" });
@@ -2544,12 +2634,12 @@ What would you like to know more about?`;
     try {
       const userId = req.user.claims.sub;
       const { agentType, message, tone = "casual" } = req.body;
-      
+
       // Get user info for region context and personalization
       const user = await storage.getUser(userId);
       const userCountry = user?.country || "Australia";
       const userTone = user?.tonePreference || tone;
-      
+
       // Get chat history for context
       const history = await storage.getChatHistory(userId, agentType, 10);
       const chatHistory = history.reverse().map(msg => ({
@@ -2584,6 +2674,22 @@ What would you like to know more about?`;
       // Mark first AI chat milestone as completed
       await JourneyTracker.markFirstAiChatComplete(userId);
 
+      // Track analytics event
+      await analyticsService.trackEvent({
+        userId,
+        eventType: 'ai_chat',
+        eventCategory: 'ai',
+        eventData: {
+          agentType,
+          tokensUsed: aiResponse.tokens_used,
+          costAud: aiResponse.cost_aud,
+          source: aiResponse.source, // cached or openai
+          messageLength: message.length,
+          responseLength: aiResponse.content.length,
+        },
+        req,
+      });
+
       // Return response in expected format
       const response = {
         message: aiResponse.content,
@@ -2605,12 +2711,24 @@ What would you like to know more about?`;
     try {
       const userId = req.user.claims.sub;
       const { agentType } = req.params;
-      
+
       const history = await storage.getChatHistory(userId, agentType, 50);
       res.json(history.reverse()); // Reverse to show oldest first
     } catch (error) {
       console.error("Error fetching chat history:", error);
       res.status(500).json({ message: "Failed to fetch chat history" });
+    }
+  });
+
+  // Token usage statistics
+  app.get('/api/tokens/stats', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const stats = await tokenLedgerService.getTokenStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching token stats:", error);
+      res.status(500).json({ message: "Failed to fetch token statistics" });
     }
   });
 
@@ -3406,9 +3524,94 @@ What would you like to know more about?`;
     }
   });
 
+  // Admin: User management
+  app.get('/api/admin/users', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.email !== "admin@bluetradie.com") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const { page = 1, limit = 50, search = '' } = req.query;
+      const offset = (page - 1) * limit;
+      
+      // Get users with optional search filtering
+      const users = await storage.getAllUsers({
+        offset: parseInt(offset),
+        limit: parseInt(limit),
+        search: search.toString()
+      });
+      
+      // Get total count for pagination
+      const totalCount = await storage.getUserCount(search.toString());
+      
+      res.json({
+        users: users.map(u => ({
+          id: u.id,
+          email: u.email,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          businessName: u.businessName,
+          trade: u.trade,
+          country: u.country,
+          subscriptionTier: u.subscriptionTier,
+          subscriptionStatus: u.subscriptionStatus,
+          isOnboarded: u.isOnboarded,
+          createdAt: u.createdAt,
+          firstLoginAt: u.firstLoginAt,
+          welcomeSentAt: u.welcomeSentAt,
+          stripeCustomerId: u.stripeCustomerId ? '***' : null, // Hide sensitive data
+          stripeSubscriptionId: u.stripeSubscriptionId ? '***' : null
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit)
+        }
+      });
+    } catch (error) {
+      console.error("Admin users fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Delete user (for testing purposes)
+  app.delete('/api/admin/users/:userId', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.email !== "admin@bluetradie.com") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const { userId } = req.params;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+      
+      // Delete user and all related data
+      await storage.deleteUser(userId);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Admin user deletion error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   // Register analytics routes
   registerAnalyticsRoutes(app);
-  
+  app.use('/', analyticsApiRouter);
+
+  // Register quotes and customer portal routes
+  app.use('/', quotesApiRouter);
+  app.use('/', customerPortalApiRouter);
+  app.use('/', teamApiRouter);
+  app.use('/', calendarApiRouter);
+  app.use('/', documentsApiRouter);
+  app.use('/', automationApiRouter);
+  app.use('/', accountingApiRouter);
+
   // Register demo routes (conditionally in preview)
   const PREVIEW_DISABLE_DEMO_ROUTES = process.env.PREVIEW_DISABLE_DEMO_ROUTES === 'true';
   

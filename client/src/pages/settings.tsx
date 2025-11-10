@@ -190,7 +190,6 @@ export default function Settings() {
                         <p className="text-sm text-gray-600">Get notified about new features and improvements</p>
                       </div>
                       <Badge variant="outline">
-                        {/* TODO: Beta removed - was: user.isBetaUser ? "Beta User" : "Regular User" */}
                         Regular User
                       </Badge>
                     </div>

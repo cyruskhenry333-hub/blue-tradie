@@ -50,3 +50,8 @@ test-results/
 
 # Claude Code files (local settings only)
 .claude/settings.local.json
+# Local test/debug HTML files
+auth-login-test.html
+login-test.html
+new-login.html
+sandbox/

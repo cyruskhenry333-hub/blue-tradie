@@ -74,11 +74,13 @@ export default function Invoices() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <img 
-                src={blueTradieLogo} 
-                alt="Blue Tradie Logo" 
-                className="h-16 w-16 md:h-18 md:w-18 object-contain"
-              />
+              <Link href="/dashboard">
+                <img 
+                  src={blueTradieLogo} 
+                  alt="Blue Tradie Logo" 
+                  className="h-16 w-16 md:h-18 md:w-18 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                />
+              </Link>
               <div>
                 <h1 className="text-2xl font-bold text-tradie-blue">Blue Tradie</h1>
                 <p className="text-sm text-gray-600">Invoice Management</p>

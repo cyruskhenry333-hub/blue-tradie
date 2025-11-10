@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Brain, 
-  Scale, 
-  Calculator, 
-  Megaphone, 
-  Settings, 
+import { TokenDashboard } from "@/components/TokenDashboard";
+import {
+  Brain,
+  Scale,
+  Calculator,
+  Megaphone,
+  Settings,
   Zap,
   Send,
   Mic,
@@ -93,13 +94,14 @@ export default function AIAdvisors() {
 
   const currentAdvisor = advisors.find(a => a.id === activeAdvisor);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
-    
+
+    const userMessage = message;
     const newMessage: AdvisorMessage = {
       id: Date.now().toString(),
       advisor: activeAdvisor,
-      message: message,
+      message: userMessage,
       timestamp: new Date(),
       type: 'question'
     };
@@ -107,27 +109,58 @@ export default function AIAdvisors() {
     setChatHistory(prev => [...prev, newMessage]);
     setMessage('');
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = {
-        business: "That's a ripper question! Based on your current situation, here's what I reckon you should do...",
-        legal: "Right, let me break this down legally for you - no fancy lawyer speak, just straight facts...",
-        financial: "Looking at your numbers, here's the financial reality and what we can do about it...",
-        marketing: "Brilliant! For your trade, here's how we can get more eyeballs on your business...",
-        operations: "Smart thinking! Here's how we can streamline that process and save you time...",
-        technology: "Future-proofing your business, eh? Here's what's coming and how to prepare..."
+    // Call real AI backend
+    try {
+      const agentTypeMap: Record<string, string> = {
+        business: 'business_coach',
+        financial: 'accountant',
+        marketing: 'marketing',
+        legal: 'legal',
+        operations: 'operations',
+        technology: 'technology'
       };
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          agentType: agentTypeMap[activeAdvisor] || 'business_coach',
+          tone: 'casual'
+        }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
 
       const aiResponse: AdvisorMessage = {
         id: (Date.now() + 1).toString(),
         advisor: activeAdvisor,
-        message: responses[activeAdvisor as keyof typeof responses],
+        message: data.message,
         timestamp: new Date(),
         type: 'advice'
       };
 
       setChatHistory(prev => [...prev, aiResponse]);
-    }, 1500);
+
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+
+      // Show error message
+      const errorResponse: AdvisorMessage = {
+        id: (Date.now() + 1).toString(),
+        advisor: activeAdvisor,
+        message: "Sorry mate, I'm having trouble connecting right now. Please try again in a moment.",
+        timestamp: new Date(),
+        type: 'advice'
+      };
+
+      setChatHistory(prev => [...prev, errorResponse]);
+    }
   };
 
   const toggleListening = () => {
@@ -140,6 +173,11 @@ export default function AIAdvisors() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">AI Business Advisors</h1>
         <p className="text-gray-600 mt-2">Your expert team of AI coaches, ready 24/7 to help grow your business</p>
+      </div>
+
+      {/* Token Usage Dashboard */}
+      <div className="mb-6">
+        <TokenDashboard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

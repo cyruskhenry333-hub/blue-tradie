@@ -89,9 +89,8 @@ export default function ThreeTierBetaSignup() {
     );
   }
 
-  // TODO: Beta disabled - force betaEnabled = false
   const betaEnabled = false;
-  const tiers = betaEnabled ? [] : []; // TODO: Beta disabled - no tiers available
+  const tiers = [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -114,7 +113,7 @@ export default function ThreeTierBetaSignup() {
               <CardContent className="p-4 text-center">
                 <div className="text-yellow-600 font-semibold">🔓 Founding Members</div>
                 <div className="text-2xl font-bold text-yellow-800">
-                  0 / 25 {/* TODO: Beta disabled - founding tier not available */}
+                  0 / 25
                 </div>
                 <div className="text-sm text-yellow-600">spots available</div>
               </CardContent>

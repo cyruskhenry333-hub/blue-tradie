@@ -73,17 +73,29 @@ export default function GuidedTour({ isOpen, onClose, autoStart = false }: Guide
   const tourSteps: TourStep[] = [
     {
       id: "welcome",
-      title: `Welcome to Blue Tradie, ${user?.firstName || countryGreeting}!`,
-      description: `Welcome to your complete business management platform! I'll take you through each section step-by-step with actionable instructions. You'll learn exactly where everything is, how to use it, and why it matters for your business. 
+      title: `🎉 Welcome to Blue Tradie, ${user?.firstName || countryGreeting}!`,
+      description: `G'day! You've just joined thousands of tradies who've transformed their business with Blue Tradie. 
 
-💡 Pro tip: You can click and drag this tour guide around if it ever covers something you need to see!
+What makes us special? **24/7 AI business experts** who understand Aussie/Kiwi trade businesses inside-out. Plus complete job tracking, invoicing, expense management, and compliance tools.
 
-This tour takes about 6 minutes and covers all essential features. Let's get started!`,
+💡 Pro tip: You can drag this tour guide around if it covers something important!
+
+This 5-minute tour shows you exactly how to grow your business with Blue Tradie. Ready?`,
       target: ".dashboard-welcome",
       position: "overlay",
       icon: <Play className="w-5 h-5" />,
       scrollTo: false,
       highlight: false
+    },
+    {
+      id: "navigation-tip",
+      title: "Quick Navigation Tip",
+      description: `See the Blue Tradie logo? Click it anytime to return to your dashboard from anywhere in the platform. It's your home base where all your key business metrics and activities are displayed.`,
+      target: "header img, header a", // Target both logo images and links
+      position: "bottom",
+      icon: <Compass className="w-5 h-5" />,
+      scrollTo: false,
+      highlight: true
     },
     {
       id: "dashboard-metrics",
@@ -130,28 +142,6 @@ This tour takes about 6 minutes and covers all essential features. Let's get sta
       aiAgent: {
         name: "Business Coach",
         suggestion: "How can AI agents help grow my tradie business?",
-        route: "/chat/coach"
-      }
-    },
-    {
-      id: "token-usage-education",
-      title: "Your Tokens = Your AI Power",
-      description: `You've got 1 million free tokens for your 14-day demo — that's more than enough to try everything.
-
-Every task your AI team does — like quoting, invoicing, or planning — uses a small number of tokens. Most tasks cost less than 1 cent.
-
-You'll see your token balance at the top of the screen, so you always know where you stand.
-
-💡 Tip: Try different tools and see how far your tokens go — it's all included in your demo.`,
-      target: ".token-usage-mini",
-      route: "/",
-      position: "bottom",
-      icon: <Coins className="w-5 h-5" />,
-      scrollTo: true,
-      highlight: true,
-      aiAgent: {
-        name: "Business Coach",
-        suggestion: "How can I use AI tokens most effectively for my business?",
         route: "/chat/coach"
       }
     },
