@@ -1,0 +1,181 @@
+services:
+  # ============================================================================
+  # WEB SERVICE - Express server serving React SPA + API
+  # ============================================================================
+  - type: web
+    name: blue-tradie-web
+    runtime: node
+    region: singapore # or oregon/frankfurt based on your location
+    plan: starter # Upgrade to standard/pro for production
+    branch: main # Change to your production branch
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+
+    healthCheckPath: /healthz
+
+    # Auto-deploy on push to branch
+    autoDeploy: true
+
+    envVars:
+      # Node environment
+      - key: NODE_ENV
+        value: production
+
+      # Database (from Render PostgreSQL service or external)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: blue-tradie-db
+          property: connectionString
+
+      # Redis (from Render Redis service or external)
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: blue-tradie-redis
+          property: connectionString
+
+      # App configuration
+      - key: APP_URL
+        sync: false # Set in Render dashboard
+      - key: APP_DOMAIN
+        sync: false
+      - key: SESSION_COOKIE_NAME
+        value: bt_sess
+      - key: SESSION_TTL_DAYS
+        value: "30"
+      - key: MAGIC_LINK_TTL_MINUTES
+        value: "15"
+      - key: WEBHOOK_SECRET_RANDOM
+        generateValue: true # Render will generate random 32-char string
+
+      # Email
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Blue Tradie
+      - key: EMAIL_FROM_ADDRESS
+        sync: false
+
+      # Stripe
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # AI Services
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # AWS S3 Storage
+      - key: STORAGE_PROVIDER
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+
+      # Optional - Sentry
+      - key: SENTRY_DSN
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+      # Optional - Twilio SMS
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_MESSAGING_SERVICE_SID
+        sync: false
+
+      # Optional - Business info
+      - key: BUSINESS_ABN
+        sync: false
+      - key: BUSINESS_ADDRESS
+        sync: false
+
+      # Worker configuration - DO NOT enable inline worker for web service
+      - key: ENABLE_INLINE_WORKER
+        value: "false"
+
+  # ============================================================================
+  # WORKER SERVICE - Bull queue background job processor
+  # ============================================================================
+  - type: worker
+    name: blue-tradie-worker
+    runtime: node
+    region: singapore # Match web service region
+    plan: starter # Can be smaller than web service
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:worker
+
+    # Auto-deploy with web service
+    autoDeploy: true
+
+    # Workers share most env vars with web service
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Database connection (same as web)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: blue-tradie-db
+          property: connectionString
+
+      # Redis connection (same as web) - REQUIRED for Bull queues
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: blue-tradie-redis
+          property: connectionString
+
+      # Email service (for sending emails from automation)
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Blue Tradie
+      - key: EMAIL_FROM_ADDRESS
+        sync: false
+
+      # AI Services (for automation rules that use AI)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # Optional - Sentry for worker error tracking
+      - key: SENTRY_DSN
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+# ============================================================================
+# DATABASE - Render PostgreSQL
+# ============================================================================
+databases:
+  - name: blue-tradie-db
+    region: singapore # Match web service region
+    plan: starter # Upgrade to standard/pro for production
+    databaseName: bluetradie
+    user: bluetradie
+    ipAllowList: [] # Empty = allow all (default for Render services)
+
+# ============================================================================
+# REDIS - For sessions and Bull queues
+# ============================================================================
+# Note: Redis instances must be created separately in Render dashboard
+# Free tier Redis not available - requires paid plan ($7/mo minimum)

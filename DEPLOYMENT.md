@@ -2,6 +2,183 @@
 
 Complete guide for deploying Blue Tradie to production.
 
+---
+
+## 🚀 Quick Start: Render Deployment (Recommended)
+
+The fastest way to deploy Blue Tradie to production with separate web and worker services.
+
+### Architecture
+
+- **Web Service**: Express server serving React SPA + REST API
+- **Worker Service**: Bull queue processor for background jobs (automation, emails)
+- **PostgreSQL Database**: Render managed PostgreSQL
+- **Redis**: Render managed Redis (for sessions & Bull queues)
+
+### Deployment Steps
+
+#### 1. Prerequisites
+
+- GitHub repository with your Blue Tradie code
+- Render account (free tier available): https://render.com
+- AWS S3 bucket for file storage (or compatible alternative)
+- SendGrid API key for emails
+- Stripe account (if using payments)
+- OpenAI + Anthropic API keys
+
+#### 2. Create Render Blueprint
+
+Blue Tradie includes a `render.yaml` blueprint for automatic service creation.
+
+**Option A: Blueprint Auto-Deploy (Recommended)**
+
+1. Go to https://dashboard.render.com/blueprints
+2. Click "New Blueprint Instance"
+3. Connect your GitHub repository
+4. Select branch: `main` (or your production branch)
+5. Render will automatically detect `render.yaml` and create:
+   - Web service: `blue-tradie-web`
+   - Worker service: `blue-tradie-worker`
+   - PostgreSQL database: `blue-tradie-db`
+6. You'll need to create Redis manually (see step 3)
+
+**Option B: Manual Service Creation**
+
+If auto-deploy doesn't work, create services manually:
+
+1. **Database**: New PostgreSQL → Name: `blue-tradie-db` → Plan: Starter
+2. **Redis**: New Redis → Name: `blue-tradie-redis` → Plan: Starter ($7/mo)
+3. **Web Service**:
+   - Type: Web Service
+   - Build: `npm ci && npm run build`
+   - Start: `npm start`
+   - Health Check: `/healthz`
+4. **Worker Service**:
+   - Type: Background Worker
+   - Build: `npm ci && npm run build`
+   - Start: `npm run start:worker`
+
+#### 3. Configure Environment Variables
+
+In Render dashboard, set these environment variables for **both web and worker** services:
+
+**Required - Web & Worker:**
+```bash
+NODE_ENV=production
+DATABASE_URL=<from Render PostgreSQL>
+REDIS_URL=<from Render Redis>
+SENDGRID_API_KEY=<your-key>
+EMAIL_FROM_ADDRESS=noreply@yourdomain.com
+OPENAI_API_KEY=<your-key>
+ANTHROPIC_API_KEY=<your-key>
+```
+
+**Required - Web Only:**
+```bash
+APP_URL=https://blue-tradie-web.onrender.com  # Your actual URL
+APP_DOMAIN=blue-tradie-web.onrender.com
+STRIPE_SECRET_KEY=<your-key>
+STRIPE_PUBLISHABLE_KEY=<your-key>
+STRIPE_WEBHOOK_SECRET=<from Stripe dashboard>
+S3_BUCKET=<your-bucket>
+S3_REGION=ap-southeast-2
+S3_ACCESS_KEY_ID=<your-key>
+S3_SECRET_ACCESS_KEY=<your-key>
+ENABLE_INLINE_WORKER=false  # Important: Don't run worker in web process
+```
+
+**Optional:**
+```bash
+SENTRY_DSN=<your-sentry-dsn>
+TWILIO_ACCOUNT_SID=<your-sid>
+TWILIO_AUTH_TOKEN=<your-token>
+BUSINESS_ABN=<your-abn>
+```
+
+#### 4. Initialize Database
+
+After first deploy, run database migrations:
+
+```bash
+# In Render web service shell (Dashboard → Shell tab)
+npm run db:push
+npm run db:seed
+```
+
+#### 5. Configure Stripe Webhooks
+
+1. In Stripe Dashboard → Developers → Webhooks
+2. Add endpoint: `https://your-render-url.onrender.com/api/stripe/webhook`
+3. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`
+4. Copy webhook secret → Set as `STRIPE_WEBHOOK_SECRET` in Render
+
+#### 6. Verify Deployment
+
+Test these endpoints:
+
+```bash
+# Health check
+curl https://your-render-url.onrender.com/healthz
+# Expected: {"status":"ok"}
+
+# API health
+curl https://your-render-url.onrender.com/api/system/health
+# Expected: {"status":"healthy","database":"connected",...}
+```
+
+### Service Roles
+
+**Web Service** (`blue-tradie-web`):
+- Serves React SPA from `/dist/client`
+- Handles all HTTP/API requests
+- WebSocket connections for real-time updates
+- Health check endpoint: `/healthz`
+- Does NOT process background jobs (worker handles those)
+
+**Worker Service** (`blue-tradie-worker`):
+- Processes Bull queue jobs from Redis
+- Runs automation rules (delayed actions)
+- Sends scheduled emails
+- No HTTP server (no port binding)
+- Shares database and Redis with web service
+
+### Scaling
+
+- **Web**: Increase instance count for more concurrent users
+- **Worker**: Increase instance count for faster job processing
+- **Database**: Upgrade plan for more storage/connections
+- **Redis**: Upgrade plan for more memory (if queue grows large)
+
+### Costs (Render Pricing)
+
+- Web Service (Starter): $7/mo
+- Worker Service (Starter): $7/mo
+- PostgreSQL (Starter): $7/mo
+- Redis (Starter): $7/mo
+- **Total: ~$28/mo** (first month free with Render credits)
+
+### Troubleshooting
+
+**Build fails:**
+- Check `package.json` has `"engines": {"node": "20.x"}`
+- Ensure all dependencies are in `package.json` (not just `devDependencies`)
+
+**Database connection errors:**
+- Verify `DATABASE_URL` is set correctly
+- Check database firewall rules (Render services auto-whitelisted)
+
+**Worker not processing jobs:**
+- Check `REDIS_URL` is identical in web and worker services
+- View worker logs in Render dashboard → Worker service → Logs
+- Verify automation rules are created and active
+
+**Stripe webhooks failing:**
+- Ensure `/api/stripe/webhook` is accessible (no auth required)
+- Check `STRIPE_WEBHOOK_SECRET` matches Stripe dashboard
+- Review webhook logs in Stripe dashboard
+
+---
+
 ## Prerequisites
 
 - Node.js 20.x
