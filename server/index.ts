@@ -19,18 +19,6 @@ import { adminUsersRouter } from "./routes/admin-users";
 // Initialize Sentry before everything else
 initSentry();
 
-// Start automation worker (Bull queue processor)
-// Only run worker in web process if:
-// - Development mode (for convenience)
-// - ENABLE_INLINE_WORKER=true (for single-dyno deployments)
-// In production with separate worker service, worker.ts runs instead
-if (process.env.NODE_ENV === 'development' || process.env.ENABLE_INLINE_WORKER === 'true') {
-  console.log('[Server] Starting inline Bull worker...');
-  import "./workers/automationWorker";
-} else {
-  console.log('[Server] Skipping inline worker (use separate worker service)');
-}
-
 const app = express();
 
 // ===== STEP 1: STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====
@@ -102,9 +90,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Start automation worker (Bull queue processor) - only in development or if explicitly enabled
+  // Production deployments should use separate worker service (npm run start:worker)
+  if (process.env.NODE_ENV === 'development' || process.env.ENABLE_INLINE_WORKER === 'true') {
+    console.log('[Server] Starting inline Bull worker (dev mode or ENABLE_INLINE_WORKER=true)');
+    await import("./workers/automationWorker.js");
+  } else {
+    console.log('[Server] Skipping inline worker - use separate worker service in production');
+  }
+
   // Add standalone email test routes BEFORE auth setup
   addStandaloneEmailTestRoutes(app);
-  
+
   // Add SendGrid debug route
   const sendgridDebug = await import('./routes/sendgrid-debug');
   app.use('/debug/sendgrid', sendgridDebug.default);

@@ -13,15 +13,13 @@ import {
 } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
-import { EmailService } from "./emailService";
+import { emailServiceWrapper } from "./email-service-wrapper";
 import { automationQueue } from "./queueService";
 import crypto from "crypto";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
 });
-
-const emailService = new EmailService();
 
 interface TriggerContext {
   userId: string;
@@ -292,7 +290,7 @@ Keep it concise and natural - no more than 2-3 sentences.`;
 
     const subject = config.subject || 'Message from your tradie';
 
-    await emailService.sendCustomEmail(
+    await emailServiceWrapper.sendCustomEmail(
       context.customerEmail,
       subject,
       content,
@@ -360,7 +358,7 @@ ${reviewLink}
 Thanks for your time!
     `.trim();
 
-    await emailService.sendCustomEmail(
+    await emailServiceWrapper.sendCustomEmail(
       context.customerEmail,
       config.subject || 'Could you leave us a review?',
       emailContent,
