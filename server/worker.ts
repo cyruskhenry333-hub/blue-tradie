@@ -4,6 +4,9 @@
  * For use with Render worker service or separate worker dynos
  */
 
+console.log('[Diag] worker starting');
+console.log('[Diag] REDIS_URL present?', !!process.env.REDIS_URL);
+
 import { initSentry } from "./sentry";
 
 // Initialize Sentry for error tracking in workers
