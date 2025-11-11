@@ -1,18 +1,37 @@
 import Bull from 'bull';
 import Redis from 'ioredis';
 
-// Redis configuration
-const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-};
+// PATCH: Accept REDIS_URL or fall back to host/port/password
+function buildRedisConnection() {
+  const url = process.env.REDIS_URL?.trim();
+  if (url) {
+    console.log('[Queue] Using REDIS_URL connection string');
+    // ioredis accepts a connection string directly
+    return new Redis(url, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
+  }
 
-// Create Redis client for Bull
+  // Fallback for environments that still provide parts
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = parseInt(process.env.REDIS_PORT || '6379', 10);
+  const password = process.env.REDIS_PASSWORD;
+
+  console.log(`[Queue] Using REDIS_HOST fallback: ${host}:${port}`);
+
+  return new Redis({
+    host,
+    port,
+    password,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
+}
+
+// Create Redis client for Bull (maintains existing Bull integration)
 const createClient = (type: string) => {
-  const client = new Redis(redisConfig);
+  const client = buildRedisConnection();
   client.on('error', (err) => {
     console.error(`[Queue] Redis ${type} error:`, err);
   });
