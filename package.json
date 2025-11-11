@@ -11,6 +11,7 @@
     "worker": "tsx server/worker.ts",
     "check": "tsc",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx scripts/run-migrations.ts",
     "db:seed": "tsx server/db/seed.ts",
     "icons:generate": "node scripts/generate-icons.js",
     "test:smoke": "tsx --test tests/smoke-tests.ts",
