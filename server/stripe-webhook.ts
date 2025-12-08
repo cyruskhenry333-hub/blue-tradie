@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import Stripe from "stripe";
 import { db } from "./db";
-import { webhookEvents } from "@shared/schema";
+import { webhookEvents, users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
@@ -165,6 +165,10 @@ async function handleStripeEvent(event: Stripe.Event) {
       console.log("💰 Invoice paid:", event.data.object);
       break;
 
+    case "invoice.payment_failed":
+      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+      break;
+
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted":
@@ -319,4 +323,39 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
       throw error;
     }
   }
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  console.log("❌ Invoice payment failed:", {
+    id: invoice.id,
+    customer: invoice.customer,
+    amount: invoice.amount_due,
+    attempt_count: invoice.attempt_count,
+    next_payment_attempt: invoice.next_payment_attempt
+  });
+
+  // Find user by Stripe customer ID
+  const customer = await db.query.users.findFirst({
+    where: eq(users.stripeCustomerId, invoice.customer as string)
+  });
+
+  if (!customer) {
+    console.log("⚠️ No user found for customer:", invoice.customer);
+    return;
+  }
+
+  // Update subscription status to past_due or unpaid
+  await db.update(users)
+    .set({
+      subscriptionStatus: invoice.attempt_count >= 4 ? "unpaid" : "past_due",
+      updatedAt: new Date()
+    })
+    .where(eq(users.id, customer.id));
+
+  console.log(`✅ Updated user ${customer.id} subscription status to ${
+    invoice.attempt_count >= 4 ? "unpaid" : "past_due"
+  }`);
+
+  // TODO: Send email notification to user about failed payment
+  // TODO: If attempt_count >= 4, consider suspending access
 }
