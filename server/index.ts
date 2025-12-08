@@ -1,3 +1,4 @@
+import "dotenv/config";
 /// <reference path="./types/express-session.d.ts" />
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
@@ -563,8 +564,8 @@ try {
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host: process.env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0",
+    ...(process.env.NODE_ENV === "production" ? { reusePort: true } : {}),
   }, () => {
     log(`serving on port ${port}`);
   });
