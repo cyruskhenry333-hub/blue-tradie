@@ -8,7 +8,7 @@ import {
   getAllowedMimeTypes,
   setDownloadSecurityHeaders
 } from "../middleware/file-security";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 export const documentsApiRouter = Router();
 
@@ -17,7 +17,7 @@ const uploadRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // Max 20 uploads per 15 minutes per user
   message: { error: 'Too many file uploads. Please try again later.' },
-  keyGenerator: (req: any) => req.user?.claims?.sub || req.ip,
+  keyGenerator: (req: any) => req.user?.claims?.sub || ipKeyGenerator(req),
 });
 
 // Configure multer for file uploads

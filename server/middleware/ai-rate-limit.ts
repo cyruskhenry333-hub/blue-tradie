@@ -3,13 +3,13 @@
  * Prevents abuse of expensive AI API calls
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { Request, Response } from 'express';
 
 // Get user ID for rate limiting
 const getUserKey = (req: Request): string => {
   const user = (req as any).user;
-  return user?.claims?.sub || req.ip || 'anonymous';
+  return user?.claims?.sub || ipKeyGenerator(req) || 'anonymous';
 };
 
 /**

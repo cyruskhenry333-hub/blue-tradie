@@ -20,6 +20,8 @@ import { adminUsersRouter } from "./routes/admin-users";
 initSentry();
 
 const app = express();
+// Trust proxy for rate limiting (required for correct IP detection behind Render/proxies)
+app.set("trust proxy", 1);
 
 // ===== STEP 1: STRIPE WEBHOOK - MOUNT FIRST (before ANY other middleware) =====
 mountStripeWebhook(app);
