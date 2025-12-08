@@ -16,6 +16,7 @@ import authVerifyRouter from "./routes/auth-verify";
 import { authUserRouter } from "./routes/auth-user";
 import { onboardingRouter } from "./routes/onboarding";
 import { adminUsersRouter } from "./routes/admin-users";
+import { bootstrapDb } from "./db/bootstrap";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -93,6 +94,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // ===== STEP 0: DATABASE BOOTSTRAP (PRODUCTION ONLY) =====
+  // Ensure critical tables exist at runtime (guards against drizzle-kit interactive prompts during build)
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DB_BOOTSTRAP === 'true') {
+    await bootstrapDb();
+  }
+
   // Start automation worker (Bull queue processor) - only in development or if explicitly enabled
   // Production deployments should use separate worker service (npm run start:worker)
   if (process.env.NODE_ENV === 'development' || process.env.ENABLE_INLINE_WORKER === 'true') {
