@@ -12,6 +12,11 @@ const STRIPE_VERIFY_DISABLED =
 
 const stripe = new Stripe(STRIPE_SECRET_KEY || "sk_dummy", { apiVersion: "2024-06-20" });
 
+// Utility for consistent money logging
+export function moneyLog(cents: number) {
+  return { amount_cents: cents, amount: (cents / 100).toFixed(2) };
+}
+
 export function mountStripeWebhook(app: express.Express) {
   console.log("[STRIPE] Mounting canonical webhook routes");
   
@@ -162,7 +167,7 @@ async function handleStripeEvent(event: Stripe.Event) {
       break;
 
     case "invoice.paid":
-      console.log("💰 Invoice paid:", event.data.object);
+      await handleInvoicePaid(event.data.object as Stripe.Invoice);
       break;
 
     case "invoice.payment_failed":
@@ -171,8 +176,11 @@ async function handleStripeEvent(event: Stripe.Event) {
 
     case "customer.subscription.created":
     case "customer.subscription.updated":
+      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+      break;
+
     case "customer.subscription.deleted":
-      console.log(`📝 Subscription ${event.type.split('.').pop()}:`, event.data.object);
+      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
       break;
 
     default:
@@ -356,6 +364,140 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     invoice.attempt_count >= 4 ? "unpaid" : "past_due"
   }`);
 
-  // TODO: Send email notification to user about failed payment
+  // Send email notification about failed payment
+  try {
+    const { emailServiceWrapper } = await import('./services/email-service-wrapper');
+
+    // Create Stripe billing portal session for easy payment method update
+    let paymentUpdateUrl = invoice.hosted_invoice_url || '';
+
+    if (customer.stripeCustomerId) {
+      try {
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customer.stripeCustomerId,
+          return_url: `${process.env.APP_URL || 'https://bluetradie.com'}/dashboard`,
+        });
+        paymentUpdateUrl = portalSession.url;
+      } catch (portalError) {
+        console.log("⚠️ Could not create portal session, using hosted invoice URL");
+      }
+    }
+
+    // Only send email once per event (idempotent via webhook_events table)
+    await emailServiceWrapper.sendPaymentFailedEmail(
+      customer.email!,
+      customer.firstName || 'there',
+      {
+        invoiceId: invoice.id,
+        amount: moneyLog(invoice.amount_due || 0),
+        attemptCount: invoice.attempt_count || 1,
+        paymentUpdateUrl,
+      }
+    );
+
+    console.log(`📧 Payment failed email sent to: ${customer.email}`);
+  } catch (emailError: any) {
+    console.error("❌ Failed to send payment failed email:", emailError?.message);
+    // Don't throw - email failure shouldn't block webhook processing
+  }
+
   // TODO: If attempt_count >= 4, consider suspending access
+}
+
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const money = moneyLog(invoice.amount_paid || 0);
+  console.log(`[STRIPE OK] invoice.paid ${invoice.id}`, money);
+
+  // Find user by Stripe customer ID
+  const customer = await db.query.users.findFirst({
+    where: eq(users.stripeCustomerId, invoice.customer as string)
+  });
+
+  if (!customer) {
+    console.log("⚠️ No user found for customer:", invoice.customer);
+    return;
+  }
+
+  // Update subscription status to active
+  await db.update(users)
+    .set({
+      subscriptionStatus: "active",
+      updatedAt: new Date()
+    })
+    .where(eq(users.id, customer.id));
+
+  console.log(`✅ Updated user ${customer.id} to active`);
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  console.log(`📝 Subscription updated: ${subscription.id}`, { status: subscription.status });
+
+  // Find user by Stripe customer ID
+  const customer = await db.query.users.findFirst({
+    where: eq(users.stripeCustomerId, subscription.customer as string)
+  });
+
+  if (!customer) {
+    console.log("⚠️ No user found for customer:", subscription.customer);
+    return;
+  }
+
+  // Map Stripe subscription status to our internal status
+  let subscriptionStatus: string;
+  switch (subscription.status) {
+    case "active":
+      subscriptionStatus = "active";
+      break;
+    case "past_due":
+      subscriptionStatus = "past_due";
+      break;
+    case "unpaid":
+      subscriptionStatus = "unpaid";
+      break;
+    case "canceled":
+      subscriptionStatus = "cancelled";
+      break;
+    case "incomplete":
+    case "incomplete_expired":
+      // Keep prior status or set to past_due
+      subscriptionStatus = customer.subscriptionStatus || "past_due";
+      break;
+    default:
+      subscriptionStatus = customer.subscriptionStatus || "none";
+  }
+
+  // Update subscription status and ID
+  await db.update(users)
+    .set({
+      subscriptionStatus,
+      stripeSubscriptionId: subscription.id,
+      updatedAt: new Date()
+    })
+    .where(eq(users.id, customer.id));
+
+  console.log(`✅ Updated user ${customer.id} subscription to ${subscriptionStatus}`);
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log(`📝 Subscription deleted: ${subscription.id}`);
+
+  // Find user by Stripe customer ID
+  const customer = await db.query.users.findFirst({
+    where: eq(users.stripeCustomerId, subscription.customer as string)
+  });
+
+  if (!customer) {
+    console.log("⚠️ No user found for customer:", subscription.customer);
+    return;
+  }
+
+  // Mark subscription as cancelled
+  await db.update(users)
+    .set({
+      subscriptionStatus: "cancelled",
+      updatedAt: new Date()
+    })
+    .where(eq(users.id, customer.id));
+
+  console.log(`✅ Updated user ${customer.id} subscription to cancelled`);
 }

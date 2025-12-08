@@ -112,6 +112,82 @@ export class EmailServiceWrapper {
     
     return this.sendEmail({ to: email, subject, html });
   }
+
+  async sendWelcomeEmail(email: string, firstName: string, plan: string): Promise<boolean> {
+    const subject = 'Welcome to Blue Tradie - Your Free Trial Starts Now! 🎉';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1e40af;">Welcome to Blue Tradie, ${firstName}!</h2>
+        <p>Your ${plan === 'teams' ? 'Teams' : 'Pro'} plan trial has started! You have 30 days of full access.</p>
+        <div style="background: #f3f4f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+          <h3 style="margin: 0; color: #1e40af;">What's Next?</h3>
+          <ul style="margin: 10px 0;">
+            <li>✅ Chat with your 6 AI Business Advisors</li>
+            <li>✅ Create professional invoices with GST</li>
+            <li>✅ Connect with other tradies in the directory</li>
+            <li>✅ Set up smart business automation</li>
+          </ul>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://bluetradie.com/login"
+             style="background: #1e40af; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+            Log In to Your Dashboard
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          Your free trial ends on ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}.
+          You'll receive reminder emails before billing starts. Cancel anytime!
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({ to: email, subject, html });
+  }
+
+  async sendPaymentFailedEmail(
+    email: string,
+    firstName: string,
+    details: {
+      invoiceId: string;
+      amount: { amount_cents: number; amount: string };
+      attemptCount: number;
+      paymentUpdateUrl: string;
+    }
+  ): Promise<boolean> {
+    const subject = '⚠️ Payment Failed - Update Your Payment Method';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">Payment Failed</h2>
+        <p>Hi ${firstName},</p>
+        <p>We were unable to process your payment for your Blue Tradie subscription.</p>
+        <div style="background: #fee2e2; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #dc2626;">
+          <p style="margin: 0; font-weight: 600; color: #991b1b;">Invoice: ${details.invoiceId}</p>
+          <p style="margin: 5px 0 0 0; font-weight: 600; color: #991b1b;">Amount: $${details.amount.amount} AUD</p>
+          <p style="margin: 5px 0 0 0; color: #991b1b; font-size: 14px;">Attempt: ${details.attemptCount}/4</p>
+        </div>
+        <p>To avoid service interruption, please update your payment method as soon as possible.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${details.paymentUpdateUrl}"
+             style="background: #dc2626; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+            Update Payment Method
+          </a>
+        </div>
+        ${details.attemptCount >= 3 ? `
+        <div style="background: #fef3c7; padding: 15px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #f59e0b;">
+          <p style="margin: 0; color: #92400e; font-weight: 600;">⚠️ Final Reminder</p>
+          <p style="margin: 5px 0 0 0; color: #92400e; font-size: 14px;">
+            This is attempt ${details.attemptCount} of 4. If payment fails again, your subscription will be cancelled.
+          </p>
+        </div>
+        ` : ''}
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          If you have questions or need assistance, please contact support at support@bluetradie.com
+        </p>
+      </div>
+    `;
+
+    return this.sendEmail({ to: email, subject, html });
+  }
 }
 
 export const emailServiceWrapper = new EmailServiceWrapper();
