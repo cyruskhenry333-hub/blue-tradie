@@ -5,10 +5,15 @@ interface AuthenticatedRequest extends Request {
 }
 
 export function passwordGateMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  // SKIP password gate in dev if admin bypass is enabled
+  if (process.env.NODE_ENV === 'development' && process.env.ENABLE_DEV_ADMIN === 'true') {
+    return next();
+  }
+
   // Force enable password gate for immediate protection - hardcode temporarily
   const FORCE_ENABLE_GATE = true;
   const PASSWORD = "preview2024";
-  
+
   // Skip password gate if ADMIN_PREVIEW_PASSWORD is not set (disabled)
   if (!FORCE_ENABLE_GATE && !process.env.ADMIN_PREVIEW_PASSWORD) {
     return next();

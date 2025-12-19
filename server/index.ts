@@ -17,6 +17,7 @@ import { authUserRouter } from "./routes/auth-user";
 import { onboardingRouter } from "./routes/onboarding";
 import { adminUsersRouter } from "./routes/admin-users";
 import { bootstrapDb } from "./db/bootstrap";
+import { devAdminBypass } from "./middleware/dev-admin-bypass";
 
 // Initialize Sentry before everything else
 initSentry();
@@ -31,7 +32,10 @@ mountStripeWebhook(app);
 // ===== STEP 2: SESSION SETUP =====
 mountSession(app);
 
-// Sentry request handler 
+// ===== DEV-ONLY: ADMIN BYPASS (must be after session, before auth routes) =====
+app.use(devAdminBypass);
+
+// Sentry request handler
 if (process.env.SENTRY_DSN) {
   app.use(Sentry.expressErrorHandler());
 }
