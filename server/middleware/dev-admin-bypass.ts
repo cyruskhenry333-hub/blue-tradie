@@ -21,7 +21,7 @@ let devUserCreated = false;
 export async function devAdminBypass(req: Request, res: Response, next: NextFunction) {
   // DOUBLE GUARD: Never run in production
   if (process.env.NODE_ENV === 'production') {
-    console.error('[DEV-ADMIN-BYPASS] BLOCKED: Attempted to run in production!');
+    // Silent guard - no logging in production to avoid spam
     return next();
   }
 
