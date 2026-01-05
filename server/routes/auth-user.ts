@@ -13,6 +13,9 @@ authUserRouter.get("/api/auth/user", (req: Request, res: Response) => {
     sessionKeys: sess ? Object.keys(sess) : []
   });
 
+  // Never cache auth responses
+  res.setHeader('Cache-Control', 'no-store');
+
   if (sess?.userId && sess?.passwordAuthenticated) {
     return res.status(200).json({
       userId: sess.userId,

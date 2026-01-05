@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuidedTour } from "@/hooks/useGuidedTour";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const { user, isLoading } = useAuth();
   const { resetTour } = useGuidedTour();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showQuickChat, setShowQuickChat] = useState(false);
 
   const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
@@ -61,8 +62,34 @@ export default function Dashboard() {
     }
   }, [user, isLoading, toast]);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      // Step 1: Call logout API
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      // Step 2: Clear all client state
+      queryClient.clear();
+      localStorage.clear();
+      sessionStorage?.clear?.();
+
+      // Step 3: Unregister service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+
+      // Step 4: Hard redirect to login
+      window.location.replace('/login');
+    } catch (error) {
+      console.error('[LOGOUT] Error during logout:', error);
+      // Even if logout fails, redirect to login
+      window.location.replace('/login');
+    }
   };
 
   if (isLoading || isDashboardLoading) {

@@ -166,11 +166,14 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
   
   // Request magic link login
   app.post('/api/auth/request-login', async (req, res) => {
+    // Never cache login request responses
+    res.setHeader('Cache-Control', 'no-store');
+
     try {
       const { email } = req.body;
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('User-Agent');
-      
+
       // Validate input
       if (!email || !email.includes('@')) {
         return res.status(400).json({ message: 'Valid email required' });
@@ -226,25 +229,38 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Logout route - redirects to homepage with toast
+  // Logout route - returns JSON and explicitly expires cookie
   app.post('/api/auth/logout', async (req, res) => {
     try {
       const cookieName = authService.getSessionCookieName();
       const sessionId = req.cookies[cookieName];
-      
+
+      // Revoke session in database if exists
       if (sessionId) {
         await authService.revokeSession(sessionId);
       }
-      
-      // Clear cookie
-      res.clearCookie(cookieName, authService.getSessionCookieOptions());
-      
-      // Redirect to homepage with logged out parameter for toast
-      res.redirect('/?logged_out=1');
-      
+
+      // Also destroy express session if present
+      if ((req as any).session) {
+        (req as any).session.destroy();
+      }
+
+      // Explicitly expire the cookie with all security flags
+      res.setHeader('Set-Cookie', [
+        `${cookieName}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; ${
+          process.env.NODE_ENV === 'production' ? 'Domain=.bluetradie.com; Secure;' : ''
+        } HttpOnly; SameSite=Lax`
+      ]);
+
+      // Never cache logout responses
+      res.setHeader('Cache-Control', 'no-store');
+
+      console.log('[AUTH] User logged out successfully');
+      res.status(200).json({ success: true });
+
     } catch (error) {
       console.error('[AUTH] Logout error:', error);
-      res.redirect('/?logout_error=1');
+      res.status(500).json({ success: false, error: 'Logout failed' });
     }
   });
 }

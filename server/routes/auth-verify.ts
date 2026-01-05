@@ -10,6 +10,9 @@ const DEFAULT_REDIRECT = "/dashboard?fresh=1";
 export const authVerifyRouter = Router();
 
 authVerifyRouter.get("/auth/verify", async (req: Request, res: Response) => {
+  // Never cache magic link verification responses
+  res.setHeader('Cache-Control', 'no-store');
+
   const token = String(req.query.token || "");
   if (!token) {
     console.error("[VERIFY] Missing token parameter");
