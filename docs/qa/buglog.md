@@ -24,6 +24,25 @@
 
 ---
 
+### BUG #4: Missing payment_intent.succeeded Webhook Handler ✅ FIXED
+**Issue**: Stripe webhook missing handler for `payment_intent.succeeded` events.
+
+**Root Cause**: Webhook handler at `server/routes/stripe-webhook.ts` only had handlers for payment_failed but not succeeded.
+
+**Fix**: Added `handlePaymentIntentSucceeded()` function to:
+- Log payment intent success with full details
+- Mark invoice as paid if invoiceId present in metadata
+- Update payment status in database
+
+**Files Changed**:
+- `server/routes/stripe-webhook.ts`
+
+**Commit**: 4179431
+
+**Impact**: Payment success events now properly update invoice status to 'paid'.
+
+---
+
 ## Bugs Found (Not Yet Fixed)
 
 ### BUG #2: Quote API Returns Generic Error Messages
