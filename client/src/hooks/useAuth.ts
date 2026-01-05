@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { AppUser } from "@shared/types/user";
 import { toAppUser } from "@shared/utils/toAppUser";
 
@@ -18,17 +19,31 @@ export function useAuth() {
   // If we get a 401 error, user is simply not authenticated (not loading)
   const isUnauthenticated = error && (error as any).status === 401;
 
-  // First-load diagnostic logging
-  if (error && !isUnauthenticated) {
-    console.error('[useAuth] Auth fetch error:', error);
-  }
+  // First-load diagnostic logging (only on state changes)
+  const lastStateRef = useRef<string>('');
+  useEffect(() => {
+    const currentState = JSON.stringify({
+      hasUser: !!user,
+      isLoading,
+      isUnauthenticated,
+      hasData: !!userData,
+    });
 
-  console.log('[useAuth] State:', {
-    hasUser: !!user,
-    isLoading,
-    isUnauthenticated,
-    userData: userData ? 'present' : 'null',
-  });
+    if (currentState !== lastStateRef.current) {
+      console.log('[useAuth] State change:', {
+        hasUser: !!user,
+        isLoading,
+        isUnauthenticated,
+        userData: userData ? 'present' : 'null',
+      });
+
+      if (error && !isUnauthenticated) {
+        console.error('[useAuth] Auth fetch error:', error);
+      }
+
+      lastStateRef.current = currentState;
+    }
+  }, [user, isLoading, isUnauthenticated, userData, error]);
 
   return {
     user,
