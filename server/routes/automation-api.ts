@@ -68,7 +68,34 @@ automationApiRouter.post("/api/automation/rules", automationRateLimit, async (re
     // Validate request body
     const validatedData = insertAutomationRuleSchema.parse(req.body);
 
-    const rule = await automationEngine.createRule(userId, validatedData);
+    // Extract only the fields createRule expects (exclude userId, isActive, etc.)
+    const {
+      name,
+      description,
+      triggerType,
+      triggerConditions,
+      delayDays,
+      delayHours,
+      actionType,
+      actionConfig,
+      useAI,
+      aiPrompt,
+      staticContent,
+    } = validatedData;
+
+    const rule = await automationEngine.createRule(userId, {
+      name,
+      description,
+      triggerType,
+      triggerConditions,
+      delayDays,
+      delayHours,
+      actionType,
+      actionConfig,
+      useAI,
+      aiPrompt,
+      staticContent,
+    });
     res.status(201).json(rule);
   } catch (error) {
     console.error('Error creating automation rule:', error);
