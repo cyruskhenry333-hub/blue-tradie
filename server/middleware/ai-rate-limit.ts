@@ -12,9 +12,8 @@ const getUserKey = (req: Request): string => {
   const userId = user?.claims?.sub;
   if (userId) return userId;
 
-  // Fall back to IP-based key
-  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anonymous';
-  return typeof ip === 'string' ? ip : ip[0] || 'anonymous';
+  // Fall back to IP-based key using proper IPv6 handling
+  return ipKeyGenerator(req);
 };
 
 /**
