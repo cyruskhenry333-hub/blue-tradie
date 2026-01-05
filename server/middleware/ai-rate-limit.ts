@@ -9,7 +9,12 @@ import { Request, Response } from 'express';
 // Get user ID for rate limiting
 const getUserKey = (req: Request): string => {
   const user = (req as any).user;
-  return user?.claims?.sub || ipKeyGenerator(req) || 'anonymous';
+  const userId = user?.claims?.sub;
+  if (userId) return userId;
+
+  // Fall back to IP-based key
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anonymous';
+  return typeof ip === 'string' ? ip : ip[0] || 'anonymous';
 };
 
 /**
