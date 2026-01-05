@@ -1322,7 +1322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           jobId: job.id,
           customerName: job.customerName,
           status: job.status,
-          serviceType: job.serviceType,
+          ...((job as any).serviceType && { serviceType: (job as any).serviceType }),
         },
         req,
       });
@@ -3533,12 +3533,14 @@ What would you like to know more about?`;
       }
       
       const { page = 1, limit = 50, search = '' } = req.query;
-      const offset = (page - 1) * limit;
-      
+      const pageNum = typeof page === 'string' ? parseInt(page) : Number(page);
+      const limitNum = typeof limit === 'string' ? parseInt(limit) : Number(limit);
+      const offset = (pageNum - 1) * limitNum;
+
       // Get users with optional search filtering
       const users = await storage.getAllUsers({
-        offset: parseInt(offset),
-        limit: parseInt(limit),
+        offset,
+        limit: limitNum,
         search: search.toString()
       });
       
