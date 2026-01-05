@@ -248,7 +248,7 @@ export default function AdminUsers() {
                           </td>
                           <td className="py-4 px-2">
                             <div className="flex flex-col gap-1">
-                              {getStatusBadge(user.subscriptionStatus)}
+                              {getStatusBadge(user.subscriptionStatus ?? 'none')}
                               <div className="flex items-center gap-1">
                                 {user.isOnboarded ? (
                                   <CheckCircle className="h-3 w-3 text-green-600" />
