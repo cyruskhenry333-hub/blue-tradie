@@ -2,7 +2,7 @@
  * DEV-ONLY ADMIN BYPASS MIDDLEWARE
  *
  * This middleware ONLY runs in development when ENABLE_DEV_ADMIN=true
- * It creates a fake admin session to bypass authentication for local QA.
+ * It creates a real admin user in the database to bypass authentication for local QA.
  *
  * CRITICAL SAFETY GUARDS:
  * - Never runs in production (double-checked)
@@ -12,7 +12,13 @@
 
 import type { Request, Response, NextFunction } from "express";
 
-export function devAdminBypass(req: Request, res: Response, next: NextFunction) {
+const DEV_USER_ID = 'dev-admin-bypass-user';
+const DEV_USER_EMAIL = 'admin@dev.local';
+
+// Cache to avoid repeated database lookups
+let devUserCreated = false;
+
+export async function devAdminBypass(req: Request, res: Response, next: NextFunction) {
   // DOUBLE GUARD: Never run in production
   if (process.env.NODE_ENV === 'production') {
     console.error('[DEV-ADMIN-BYPASS] BLOCKED: Attempted to run in production!');
@@ -24,35 +30,69 @@ export function devAdminBypass(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
-  const sess: any = req.session;
+  try {
+    // Ensure dev user exists in database (only once)
+    if (!devUserCreated) {
+      const { db } = await import('../db');
+      const { users } = await import('../../shared/schema');
+      const { eq } = await import('drizzle-orm');
 
-  // Always set session data if not present
-  if (!sess.userId) {
-    sess.userId = 'dev-admin-bypass-user-id';
-    sess.email = 'admin@dev.local';
-    sess.passwordAuthenticated = true;
-    sess.isOnboarded = true;
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, DEV_USER_ID))
+        .limit(1);
 
-    // Only log once per session
-    if (!sess._devBypassLogged) {
-      console.log('[DEV-ADMIN-BYPASS] ✅ Active - bypassing auth as admin');
-      sess._devBypassLogged = true;
+      if (existingUser.length === 0) {
+        await db.insert(users).values({
+          id: DEV_USER_ID,
+          email: DEV_USER_EMAIL,
+          firstName: 'Dev',
+          lastName: 'Admin',
+          businessName: 'Dev Testing Co',
+          trade: 'Electrician',
+          country: 'AU',
+          createdAt: new Date(),
+        });
+        console.log('[DEV-ADMIN-BYPASS] Created dev admin user in database');
+      }
+
+      devUserCreated = true;
     }
-  }
 
-  // ALWAYS set req.user for OAuth-style routes (documents API, etc.)
-  if (!(req as any).user) {
-    (req as any).user = {
-      claims: {
-        sub: 'dev-admin-bypass-user-id',
-        email: 'admin@dev.local',
-      },
-      id: 'dev-admin-bypass-user-id',
-      email: 'admin@dev.local',
-    };
-  }
+    const sess: any = req.session;
 
-  next();
+    // Always set session data if not present
+    if (!sess.userId) {
+      sess.userId = DEV_USER_ID;
+      sess.email = DEV_USER_EMAIL;
+      sess.passwordAuthenticated = true;
+      sess.isOnboarded = true;
+
+      // Only log once per session
+      if (!sess._devBypassLogged) {
+        console.log('[DEV-ADMIN-BYPASS] ✅ Active - bypassing auth as admin');
+        sess._devBypassLogged = true;
+      }
+    }
+
+    // ALWAYS set req.user for OAuth-style routes (documents API, etc.)
+    if (!(req as any).user) {
+      (req as any).user = {
+        claims: {
+          sub: DEV_USER_ID,
+          email: DEV_USER_EMAIL,
+        },
+        id: DEV_USER_ID,
+        email: DEV_USER_EMAIL,
+      };
+    }
+
+    next();
+  } catch (error) {
+    console.error('[DEV-ADMIN-BYPASS] Error setting up dev user:', error);
+    next(); // Continue even if setup fails
+  }
 }
 
 /**
