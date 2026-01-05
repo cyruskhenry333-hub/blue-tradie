@@ -290,14 +290,13 @@ Keep it concise and natural - no more than 2-3 sentences.`;
 
     const subject = config.subject || 'Message from your tradie';
 
-    await emailServiceWrapper.sendCustomEmail(
-      context.customerEmail,
+    await emailServiceWrapper.sendEmail({
+      to: context.customerEmail,
       subject,
-      content,
-      `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <p style="white-space: pre-wrap;">${content.replace(/\n/g, '<br>')}</p>
       </div>`
-    );
+    });
   }
 
   /**
@@ -358,11 +357,10 @@ ${reviewLink}
 Thanks for your time!
     `.trim();
 
-    await emailServiceWrapper.sendCustomEmail(
-      context.customerEmail,
-      config.subject || 'Could you leave us a review?',
-      emailContent,
-      `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    await emailServiceWrapper.sendEmail({
+      to: context.customerEmail,
+      subject: config.subject || 'Could you leave us a review?',
+      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <p>Hi ${context.customerName || 'there'},</p>
         <p style="white-space: pre-wrap;">${content.replace(/\n/g, '<br>')}</p>
         <p>We'd really appreciate if you could leave us a review:</p>
@@ -375,7 +373,7 @@ Thanks for your time!
         </p>
         <p>Thanks for your time!</p>
       </div>`
-    );
+    });
   }
 
   /**

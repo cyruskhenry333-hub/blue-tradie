@@ -170,7 +170,7 @@ export class AccountingService {
     );
 
     // GST calculations (assuming GST is included in prices)
-    const gstRate = parseFloat(settings.gstRate) / 100;
+    const gstRate = parseFloat(settings.gstRate || '10') / 100; // Default to 10% if not set
     const gstDivisor = 1 + gstRate; // 1.1 for 10% GST
 
     const gstOnSales = totalSales - (totalSales / gstDivisor);

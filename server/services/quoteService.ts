@@ -34,7 +34,7 @@ export class QuoteService {
   /**
    * Create a new quote
    */
-  async createQuote(data: InsertQuote): Promise<Quote> {
+  async createQuote(data: Omit<InsertQuote, 'quoteNumber' | 'yearSequence'>): Promise<Quote> {
     const { quoteNumber, yearSequence } = await this.generateQuoteNumber(data.userId);
 
     // Generate portal access token for customer

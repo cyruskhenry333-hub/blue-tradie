@@ -85,16 +85,16 @@ automationApiRouter.post("/api/automation/rules", automationRateLimit, async (re
 
     const rule = await automationEngine.createRule(userId, {
       name,
-      description,
+      description: description ?? undefined,
       triggerType,
-      triggerConditions,
-      delayDays,
-      delayHours,
+      triggerConditions: (triggerConditions ?? undefined) as Record<string, any> | undefined,
+      delayDays: delayDays ?? undefined,
+      delayHours: delayHours ?? undefined,
       actionType,
-      actionConfig,
-      useAI,
-      aiPrompt,
-      staticContent,
+      actionConfig: (actionConfig ?? undefined) as Record<string, any> | undefined,
+      useAI: useAI ?? undefined,
+      aiPrompt: aiPrompt ?? undefined,
+      staticContent: staticContent ?? undefined,
     });
     res.status(201).json(rule);
   } catch (error) {
