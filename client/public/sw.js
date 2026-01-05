@@ -1,12 +1,12 @@
 // Blue Tradie Service Worker
 // Cache-first for assets, network-first for API calls
+// NEVER cache index.html or API calls
 
-const CACHE_NAME = 'blue-tradie-v2';
+const CACHE_NAME = 'blue-tradie-v3';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache on install
+// Assets to cache on install (excluding index.html)
 const PRECACHE_ASSETS = [
-  '/',
   '/offline.html',
   '/manifest.json',
 ];
@@ -58,9 +58,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests: Network-first, cache fallback
+  // API requests: Network only, NEVER cache
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstStrategy(request));
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // NEVER cache index.html - always fetch from network
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(OFFLINE_URL))
+    );
     return;
   }
 
@@ -70,7 +78,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML pages: Network-first, cache fallback, offline page as last resort
+  // Other HTML pages: Network-first, cache fallback, offline page as last resort
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -91,41 +99,6 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
-
-// Network-first strategy (good for API calls)
-async function networkFirstStrategy(request) {
-  try {
-    const networkResponse = await fetch(request);
-
-    // Cache successful responses
-    if (networkResponse && networkResponse.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    console.log('[Service Worker] Network failed, trying cache:', request.url);
-    const cachedResponse = await caches.match(request);
-
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // Return offline JSON response for API calls
-    return new Response(
-      JSON.stringify({
-        error: 'You are offline',
-        offline: true,
-        cached: false
-      }),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        status: 503,
-      }
-    );
-  }
-}
 
 // Cache-first strategy (good for static assets)
 async function cacheFirstStrategy(request) {
