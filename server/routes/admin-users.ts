@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "../db";
 import { users } from "@shared/schema";
-import { desc, count, like, or } from "drizzle-orm";
+import { desc, count, like, or, eq } from "drizzle-orm";
 
 export const adminUsersRouter = Router();
 
@@ -120,7 +120,7 @@ adminUsersRouter.get("/api/admin/users/:id", async (req: Request, res: Response)
 
   try {
     const userId = req.params.id;
-    const [user] = await db.select().from(users).where((t) => t.id === userId);
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
