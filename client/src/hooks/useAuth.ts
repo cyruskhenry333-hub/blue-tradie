@@ -18,6 +18,18 @@ export function useAuth() {
   // If we get a 401 error, user is simply not authenticated (not loading)
   const isUnauthenticated = error && (error as any).status === 401;
 
+  // First-load diagnostic logging
+  if (error && !isUnauthenticated) {
+    console.error('[useAuth] Auth fetch error:', error);
+  }
+
+  console.log('[useAuth] State:', {
+    hasUser: !!user,
+    isLoading,
+    isUnauthenticated,
+    userData: userData ? 'present' : 'null',
+  });
+
   return {
     user,
     isLoading: isLoading && !isUnauthenticated,

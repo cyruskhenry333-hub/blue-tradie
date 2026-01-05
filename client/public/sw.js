@@ -1,7 +1,7 @@
 // Blue Tradie Service Worker
 // Cache-first for assets, network-first for API calls
 
-const CACHE_NAME = 'blue-tradie-v1';
+const CACHE_NAME = 'blue-tradie-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install
