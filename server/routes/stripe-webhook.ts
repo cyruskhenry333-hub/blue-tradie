@@ -63,6 +63,9 @@ export function registerStripeWebhookRoutes(app: Express) {
         } else if (event.type === "invoice.payment_failed") {
           const invoice = event.data.object as Stripe.Invoice;
           await handleInvoicePaymentFailed(event, invoice);
+        } else if (event.type === "payment_intent.succeeded") {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          await handlePaymentIntentSucceeded(event, paymentIntent);
         } else if (event.type === "payment_intent.payment_failed") {
           const paymentIntent = event.data.object as Stripe.PaymentIntent;
           await handlePaymentIntentFailed(event, paymentIntent);
@@ -182,8 +185,37 @@ async function handleInvoicePaymentFailed(event: Stripe.Event, invoice: Stripe.I
   }
 }
 
+async function handlePaymentIntentSucceeded(event: Stripe.Event, paymentIntent: Stripe.PaymentIntent) {
+
+  console.log('✅ Processing payment_intent.succeeded:', {
+    paymentIntentId: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    status: paymentIntent.status,
+    metadata: paymentIntent.metadata
+  });
+
+  // Handle payment success for checkout sessions
+  if (paymentIntent.metadata?.invoiceId) {
+    const invoiceId = parseInt(paymentIntent.metadata.invoiceId);
+
+    try {
+      await storage.updateInvoicePaymentStatus(
+        invoiceId,
+        'paid',
+        paymentIntent.id,
+        new Date()
+      );
+
+      console.log(`✅ Invoice ${invoiceId} marked as paid via payment intent ${paymentIntent.id}`);
+    } catch (error) {
+      console.error(`❌ Failed to update invoice ${invoiceId} payment status:`, error);
+    }
+  }
+}
+
 async function handlePaymentIntentFailed(event: Stripe.Event, paymentIntent: Stripe.PaymentIntent) {
-  
+
   console.log('❌ Processing payment_intent.payment_failed:', {
     paymentIntentId: paymentIntent.id,
     amount: paymentIntent.amount,
@@ -195,10 +227,10 @@ async function handlePaymentIntentFailed(event: Stripe.Event, paymentIntent: Str
   // Handle payment failure for checkout sessions
   if (paymentIntent.metadata?.invoiceId) {
     const invoiceId = parseInt(paymentIntent.metadata.invoiceId);
-    
+
     try {
       await storage.updateInvoicePaymentStatus(invoiceId, 'failed');
-      
+
       console.log(`❌ Invoice ${invoiceId} marked as payment failed via payment intent ${paymentIntent.id}`);
     } catch (error) {
       console.error(`❌ Failed to update invoice ${invoiceId} payment status:`, error);
