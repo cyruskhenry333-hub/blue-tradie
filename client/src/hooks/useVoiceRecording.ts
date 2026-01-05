@@ -1,5 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
+// Type shim for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 interface VoiceRecognitionResult {
   transcript: string;
   confidence: number;
