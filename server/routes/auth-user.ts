@@ -34,7 +34,7 @@ authUserRouter.get("/api/user/first-run", (req: Request, res: Response) => {
   // Clear the first login flag after checking
   if (showWelcome) {
     sess.firstLogin = false;
-    sess.save((err) => {
+    sess.save((err: unknown) => {
       if (err) console.error("[FIRST-RUN] Failed to clear firstLogin flag:", err);
     });
   }
