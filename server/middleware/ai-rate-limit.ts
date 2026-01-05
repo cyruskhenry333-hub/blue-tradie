@@ -3,7 +3,7 @@
  * Prevents abuse of expensive AI API calls
  */
 
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
 // Get user ID for rate limiting
@@ -12,8 +12,9 @@ const getUserKey = (req: Request): string => {
   const userId = user?.claims?.sub;
   if (userId) return userId;
 
-  // Fall back to IP-based key using proper IPv6 handling
-  return ipKeyGenerator(req);
+  // Fall back to IP-based key
+  // Use standard IP extraction that express-rate-limit expects
+  return req.ip || 'unknown';
 };
 
 /**
