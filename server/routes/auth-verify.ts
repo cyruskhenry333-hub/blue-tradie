@@ -5,7 +5,7 @@ import { authService } from "../services/auth-service";
 import { analyticsService } from "../services/analyticsService";
 
 const MAGIC_LINK_JWT_SECRET = process.env.MAGIC_LINK_JWT_SECRET || process.env.SESSION_SECRET || 'fallback-jwt-secret';
-const DEFAULT_REDIRECT = "/dashboard?fresh=1";
+const DEFAULT_REDIRECT = "/?fresh=1";
 
 export const authVerifyRouter = Router();
 
@@ -80,7 +80,7 @@ authVerifyRouter.get("/auth/verify", async (req: Request, res: Response) => {
     }
 
     // Step 6: Determine redirect destination
-    const redirect = payload.redirect || (sess.isOnboarded ? "/dashboard?fresh=1" : "/onboarding") || DEFAULT_REDIRECT;
+    const redirect = payload.redirect || (sess.isOnboarded ? "/?fresh=1" : "/onboarding") || DEFAULT_REDIRECT;
 
     console.log("[VERIFY] About to save session before redirect:", {
       sessionId: sess.id,
