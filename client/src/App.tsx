@@ -140,6 +140,7 @@ function Router() {
             ) : (
               <>
                 <Route path="/" component={Dashboard} />
+                <Route path="/dashboard" component={Dashboard} />
                 <Route path="/chat/:agentType?" component={Chat} />
                 <Route path="/invoices" component={Invoices} />
                 <Route path="/quotes" component={Quotes} />

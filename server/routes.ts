@@ -199,7 +199,7 @@ export async function registerEssentialApiRoutes(app: Express): Promise<void> {
       }
       
       // Create magic link token with appropriate redirect
-      const redirect = user.isOnboarded ? '/dashboard' : '/onboarding';
+      const redirect = user.isOnboarded ? '/' : '/onboarding';
       const { token } = await authService.createMagicLinkToken(
         email, 
         user.id, 

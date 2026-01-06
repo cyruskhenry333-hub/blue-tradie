@@ -146,7 +146,7 @@ app.use((req, res, next) => {
   app.get('/login', (req, res, next) => {
     const sess: any = (req as any).session;
     if (sess?.userId && sess?.passwordAuthenticated) {
-      return res.redirect(sess.isOnboarded ? '/dashboard' : '/onboarding');
+      return res.redirect(sess.isOnboarded ? '/' : '/onboarding');
     }
     return next(); // let frontend serve the login page
   });

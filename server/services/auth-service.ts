@@ -70,7 +70,7 @@ export class AuthService {
     email: string, 
     userId?: string, 
     from: string = 'login',
-    redirect: string = '/dashboard'
+    redirect: string = '/'
   ): Promise<{ token: string; tokenId: string }> {
     const tokenId = nanoid();
     const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MINUTES * 60 * 1000);
