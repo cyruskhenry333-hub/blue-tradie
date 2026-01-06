@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/require-auth";
 import { storage } from "../storage";
 
+const APP_HOME_PATH = "/";
+
 export const onboardingRouter = Router();
 
 onboardingRouter.post("/api/user/onboarding", requireAuth, async (req: Request, res: Response) => {
@@ -56,12 +58,12 @@ onboardingRouter.post("/api/user/onboarding", requireAuth, async (req: Request, 
     sess.save((err: unknown) => {
       if (err) {
         console.error("[ONBOARDING] session.save error:", err);
-        return res.status(200).json({ ok: true, redirect: "/dashboard" });
+        return res.status(200).json({ ok: true, redirect: APP_HOME_PATH });
       }
       console.log("[ONBOARDING] Saved session for", userId, "org:", currentOrgId);
-      return res.status(200).json({ 
-        ok: true, 
-        redirect: "/dashboard",
+      return res.status(200).json({
+        ok: true,
+        redirect: APP_HOME_PATH,
         userId,
         organizationId: currentOrgId,
         organizationOnboarded: true
