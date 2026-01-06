@@ -70,6 +70,33 @@ const handleLogin = () => {
 
 ---
 
+### BUG #6: Password Gate Blocks Magic Link Authenticated Users ✅ FIXED
+**Issue**: Dashboard shows blank screen after successful magic link login. Network shows HTML "password-gate" response instead of JSON, causing SPA parsing failure.
+
+**Root Cause**: Password gate middleware only checked `session.passwordAuthenticated` flag (preview password), not `session.userId` flag (magic link auth). Authenticated users were redirected to gate page, breaking dashboard rendering.
+
+**Fix**: Updated gate middleware to check BOTH authentication methods:
+```typescript
+// Before:
+if (req.session?.passwordAuthenticated) {
+  return next();
+}
+
+// After:
+if (req.session?.passwordAuthenticated || req.session?.userId) {
+  return next();
+}
+```
+
+**Files Changed**:
+- `server/middleware/password-gate.ts`
+
+**Commit**: f5ef52b
+
+**Impact**: Magic link authenticated users can now access `/dashboard` and all app routes without hitting password gate redirect.
+
+---
+
 ## Bugs Found (Not Yet Fixed)
 
 ### BUG #2: Quote API Returns Generic Error Messages
