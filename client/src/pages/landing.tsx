@@ -40,7 +40,7 @@ export default function Landing() {
   };
 
   const handleLogin = () => {
-    setLocation('/login');
+    window.location.href = '/login';
   };
 
   return (
