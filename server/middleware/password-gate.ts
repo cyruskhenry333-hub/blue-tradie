@@ -35,8 +35,8 @@ export function passwordGateMiddleware(req: AuthenticatedRequest, res: Response,
     return next();
   }
 
-  // Check if user has already authenticated with password
-  if (req.session?.passwordAuthenticated) {
+  // Check if user has already authenticated with password OR magic link
+  if (req.session?.passwordAuthenticated || req.session?.userId) {
     return next();
   }
 
