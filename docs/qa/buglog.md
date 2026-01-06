@@ -119,9 +119,15 @@ const redirect = ... "/?fresh=1" ...
 **Files Changed**:
 - `server/routes/auth-verify.ts`
 
-**Commit**: 624c1d5
+**Commit**: 624c1d5, a3e6fce (comprehensive fix)
 
-**Impact**: Magic link login now redirects to correct route, dashboard content renders properly.
+**Follow-up Fix**: Initial fix only updated `auth-verify.ts` defaults, but `routes.ts:202` was embedding `/dashboard` in JWT token payload, bypassing the fix. Comprehensive fix updated ALL 4 locations:
+1. `server/routes.ts:202` - magic link token creation
+2. `server/index.ts:149` - /login redirect for authenticated users
+3. `server/services/auth-service.ts:73` - default redirect parameter
+4. `client/App.tsx:143` - added `/dashboard` route alias as safeguard
+
+**Impact**: Magic link login now redirects to correct route everywhere, dashboard content renders properly. Client-side alias prevents future blank screens from legacy links.
 
 ---
 
