@@ -97,6 +97,34 @@ if (req.session?.passwordAuthenticated || req.session?.userId) {
 
 ---
 
+### BUG #7: Magic Link Redirects to Non-Existent Route ✅ FIXED
+**Issue**: After successful magic link login, dashboard shows blank screen. React app shell renders (quick actions, AI assistant, footer) but main content area (Child 0) is empty.
+
+**Root Cause**: Route mismatch between server redirect and client router:
+- Server: `auth-verify.ts` redirects to `/dashboard?fresh=1`
+- Client: `App.tsx:142` has Dashboard at `/` (root), NOT `/dashboard`
+- Wouter router returns null for unmatched routes → empty DIV
+
+**Fix**: Updated auth verify redirect to match actual route:
+```typescript
+// Before:
+const DEFAULT_REDIRECT = "/dashboard?fresh=1";
+const redirect = ... "/dashboard?fresh=1" ...
+
+// After:
+const DEFAULT_REDIRECT = "/?fresh=1";
+const redirect = ... "/?fresh=1" ...
+```
+
+**Files Changed**:
+- `server/routes/auth-verify.ts`
+
+**Commit**: 624c1d5
+
+**Impact**: Magic link login now redirects to correct route, dashboard content renders properly.
+
+---
+
 ## Bugs Found (Not Yet Fixed)
 
 ### BUG #2: Quote API Returns Generic Error Messages
