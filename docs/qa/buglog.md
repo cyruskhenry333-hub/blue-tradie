@@ -43,6 +43,33 @@
 
 ---
 
+### BUG #5: Login Button Routes to Client-Side NotFound ✅ FIXED
+**Issue**: Clicking "Login" button from marketing homepage lands on client-side NotFound page instead of server-rendered login page.
+
+**Root Cause**: Login button in `landing.tsx` used `setLocation('/login')` which attempted client-side SPA navigation, but `/login` is a server-rendered page (not in React router). This caused the SPA router to show NotFound.
+
+**Fix**: Changed Login button to use hard navigation:
+```typescript
+// Before:
+const handleLogin = () => {
+  setLocation('/login');
+};
+
+// After:
+const handleLogin = () => {
+  window.location.href = '/login';
+};
+```
+
+**Files Changed**:
+- `client/src/pages/landing.tsx`
+
+**Commit**: dbdf792
+
+**Impact**: Login button now correctly loads the server-rendered login page instead of hitting client-side 404.
+
+---
+
 ## Bugs Found (Not Yet Fixed)
 
 ### BUG #2: Quote API Returns Generic Error Messages
