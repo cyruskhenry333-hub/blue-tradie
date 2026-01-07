@@ -2,7 +2,7 @@
 // Cache-first for assets, network-first for API calls
 // NEVER cache index.html or API calls
 
-const CACHE_NAME = 'blue-tradie-v3';
+const CACHE_NAME = 'blue-tradie-v4'; // Bumped to force SW update - never cache HTML navigation
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install (excluding index.html)
@@ -64,8 +64,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // NEVER cache index.html - always fetch from network
-  if (url.pathname === '/' || url.pathname === '/index.html') {
+  // NEVER cache HTML navigation requests - always fetch from network
+  // This includes /, /signup, /onboarding, /profile, etc.
+  // Navigation requests need fresh HTML with injected runtime config
+  if (request.mode === 'navigate' ||
+      url.pathname === '/' ||
+      url.pathname === '/index.html' ||
+      !isStaticAsset(url.pathname)) {
     event.respondWith(
       fetch(request).catch(() => caches.match(OFFLINE_URL))
     );
@@ -73,31 +78,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Static assets: Cache-first, network fallback
-  if (isStaticAsset(url.pathname)) {
-    event.respondWith(cacheFirstStrategy(request));
-    return;
-  }
-
-  // Other HTML pages: Network-first, cache fallback, offline page as last resort
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // Cache successful responses
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request)
-          .then((cachedResponse) => {
-            return cachedResponse || caches.match(OFFLINE_URL);
-          });
-      })
-  );
+  event.respondWith(cacheFirstStrategy(request));
 });
 
 // Cache-first strategy (good for static assets)

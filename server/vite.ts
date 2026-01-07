@@ -103,7 +103,10 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static assets (JS, CSS, images) but NOT index.html
+  // index: false prevents express.static from serving index.html automatically
+  // This allows our custom handlers below to inject runtime config
+  app.use(express.static(distPath, { index: false }));
 
   // Authentication middleware
   async function requireAuth(req: any, res: any, next: any) {
@@ -143,7 +146,10 @@ export function serveStatic(app: Express) {
       const htmlPath = path.resolve(distPath, "index.html");
       let html = fs.readFileSync(htmlPath, 'utf-8');
       html = injectRuntimeConfig(html);
-      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      res.status(200).set({
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store", // Prevent HTML caching so config is always fresh
+      }).end(html);
     });
   });
 
@@ -152,6 +158,9 @@ export function serveStatic(app: Express) {
     const htmlPath = path.resolve(distPath, "index.html");
     let html = fs.readFileSync(htmlPath, 'utf-8');
     html = injectRuntimeConfig(html);
-    res.status(200).set({ "Content-Type": "text/html" }).end(html);
+    res.status(200).set({
+      "Content-Type": "text/html",
+      "Cache-Control": "no-store", // Prevent HTML caching so config is always fresh
+    }).end(html);
   });
 }

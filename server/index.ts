@@ -104,6 +104,12 @@ app.use((req, res, next) => {
     await bootstrapDb();
   }
 
+  // ===== CONFIG LOGGING (for debugging market lock) =====
+  console.log('[CONFIG] Runtime environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    APP_MARKET_LOCK: process.env.APP_MARKET_LOCK || 'null',
+  });
+
   // Start automation worker (Bull queue processor) - only in development or if explicitly enabled
   // Production deployments should use separate worker service (npm run start:worker)
   if (process.env.NODE_ENV === 'development' || process.env.ENABLE_INLINE_WORKER === 'true') {
@@ -139,6 +145,13 @@ app.use((req, res, next) => {
         isOnboarded: session?.isOnboarded,
         keys: Object.keys(session || {})
       }
+    });
+  });
+
+  // ===== RUNTIME CONFIG ENDPOINT (for verifying market lock) =====
+  app.get('/api/runtime-config', (req, res) => {
+    res.json({
+      marketLock: process.env.APP_MARKET_LOCK || null,
     });
   });
 
