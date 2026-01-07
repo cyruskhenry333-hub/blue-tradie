@@ -325,6 +325,240 @@ if (req.session?.passwordAuthenticated || req.session?.userId) {
 
 ---
 
+## Fix #3: NZ Market Lock + Copy Sweep + AU Leakage Prevention
+
+### Symptom
+- With `APP_MARKET_LOCK=NZ` set in production environment
+- Signup/trial page still shows "AU Australia" as default country
+- Service area placeholder shows "Sydney, NSW" (Australia-specific)
+- Quick Access Panel shows "Tax & BAS" (BAS is Australia-specific, should be "GST Returns" for NZ)
+- No prevention mechanism to catch new AU-specific strings introduced in future code
+
+### Root Cause
+**Primary Issues:**
+1. **signup.tsx doesn't use market-config** - Trial/checkout entry point had hardcoded:
+   - Schema: `z.enum(["Australia", "New Zealand"])` instead of using `getAllowedCountries()`
+   - Default: `country: "Australia"` instead of `getDefaultCountry()`
+   - Placeholder: `"Sydney, NSW"` instead of market-appropriate example
+
+2. **Scattered market-specific copy** - No single source of truth for:
+   - Service area placeholders (different examples for NZ vs AU)
+   - Business ID labels (NZBN vs ABN)
+   - Tax authority names (IRD vs ATO)
+   - Tax forms (GST Returns vs BAS)
+   - Currency codes (NZD vs AUD)
+
+3. **No leakage prevention** - Easy to accidentally hardcode AU-specific strings anywhere in codebase
+
+### How We Proved It
+1. **User evidence:**
+   - "Create Your Account / Start Free Trial" screen showed AU default and Sydney placeholder
+   - This was happening despite `APP_MARKET_LOCK=NZ` being set in Render
+
+2. **Code search evidence:**
+   ```bash
+   rg -n "Sydney|NSW" client/src
+   # Found 12 instances across signup.tsx, jobs.tsx, profile.tsx, etc.
+
+   rg -n "ABN|ATO|BAS" client/src
+   # Found 40+ instances scattered across components
+   ```
+
+3. **File inspection:**
+   - `signup.tsx:24` - Hardcoded enum
+   - `signup.tsx:55` - Default "Australia"
+   - `signup.tsx:300` - Placeholder "Sydney, NSW"
+   - `QuickAccessPanel.tsx:122` - "Tax & BAS" hardcoded
+
+### Minimal Code Changes
+
+**Fix 1: Extend market-config.ts with Market-Specific Helpers**
+
+**File:** `shared/market-config.ts`
+
+**Added Functions:**
+```typescript
+export function getServiceAreaPlaceholder(): string {
+  const defaultCountry = getDefaultCountry();
+  if (defaultCountry === 'New Zealand') {
+    return 'e.g., Auckland Central, Wellington';
+  }
+  if (defaultCountry === 'Australia') {
+    return 'e.g., Sydney Metro, Melbourne CBD';
+  }
+  return 'e.g., Sydney Metro, Auckland Central'; // Both allowed
+}
+
+export function getDefaultCurrency(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'NZD' : 'AUD';
+}
+
+export function getBusinessIdLabel(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'NZBN' : 'ABN';
+}
+
+export function getTaxAuthority(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'IRD' : 'ATO';
+}
+
+export function getTaxFormsLabel(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'GST Returns' : 'BAS';
+}
+
+export function getGSTRate(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? '15%' : '10%';
+}
+```
+
+**Why this works:**
+- Single source of truth for all market-specific UI defaults
+- Automatically adapts based on `APP_MARKET_LOCK` environment variable
+- When `MARKET_LOCK=NZ`, all functions return NZ-appropriate values
+- When `MARKET_LOCK=AU`, all return AU values
+- When both allowed, returns neutral/dual examples
+
+**Fix 2: Update signup.tsx to Use Market Config**
+
+**File:** `client/src/pages/signup.tsx`
+
+**Changes:**
+```typescript
+// Added import:
+import { getAllowedCountries, getDefaultCountry, getServiceAreaPlaceholder } from "@shared/market-config";
+
+// Line 25 - Schema:
+- country: z.enum(["Australia", "New Zealand"], ...)
++ country: z.enum(getAllowedCountries() as [string, ...string[]], ...)
+
+// Line 56 - Default value:
+- country: "Australia",
++ country: getDefaultCountry(),
+
+// Line 271-298 - Country selector (conditionally hide when only 1 option):
++ {getAllowedCountries().length > 1 ? (
+    <FormField ... country selector ... />
++ ) : (
++   <input type="hidden" {...form.register("country")} value={getDefaultCountry()} />
++ )}
+
+// Line 308 - Service area placeholder:
+- <Input placeholder="Sydney, NSW" {...field} />
++ <Input placeholder={getServiceAreaPlaceholder()} {...field} />
+```
+
+**Fix 3: Update onboarding-wizard.tsx**
+
+**File:** `client/src/components/onboarding-wizard.tsx`
+
+**Change:**
+```typescript
+// Already had market-config import, just updated placeholder:
+- <Input placeholder="e.g., Sydney Metro, Auckland Central" {...field} />
++ <Input placeholder={getServiceAreaPlaceholder()} {...field} />
+```
+
+**Fix 4: Update profile.tsx**
+
+**File:** `client/src/pages/profile.tsx`
+
+**Changes:**
+```typescript
+// Added import:
++ import { getServiceAreaPlaceholder } from "@shared/market-config";
+
+// Line 280 - Placeholder:
+- <Input placeholder="e.g., Sydney Metro, Auckland Central" {...field} />
++ <Input placeholder={getServiceAreaPlaceholder()} {...field} />
+```
+
+**Fix 5: Update QuickAccessPanel.tsx**
+
+**File:** `client/src/components/QuickAccessPanel.tsx`
+
+**Changes:**
+```typescript
+// Added import:
++ import { getTaxFormsLabel } from "@shared/market-config";
+
+// Line 123 - Dynamic title:
+- title: "Tax & BAS",
++ title: `Tax & ${getTaxFormsLabel()}`,
+```
+
+**Fix 6: Prevention Script**
+
+**File:** `scripts/check-market-leakage.cjs` (new file)
+
+**Added npm script:**
+```json
+// package.json:
+"lint:market": "node scripts/check-market-leakage.cjs"
+```
+
+**How it works:**
+- Scans `client/src`, `server`, `shared` for forbidden tokens:
+  - Sydney, NSW, Melbourne, ABN, ATO, BAS, "AUD", "AU Australia"
+- Allows these tokens ONLY in:
+  - `shared/market-config.ts`
+  - `client/src/utils/language-utils.ts`
+  - `shared/schema.ts` (DB schema country enum)
+  - Documentation files
+  - Migrations (historical data)
+- Fails with exit code 1 if violations found outside allowed locations
+- Can be added to CI pipeline later
+
+### Deployment Gotchas
+1. **Env var must be set in Render:**
+   - Code is ready, but activation requires manual env var: `APP_MARKET_LOCK=NZ`
+   - After setting, service auto-redeploys and NZ-only mode activates
+
+2. **Client-side cache:**
+   - Users may have cached old signup page with AU defaults
+   - Service worker cache should auto-update on deploy
+   - If issues persist, clear browser cache or hard refresh
+
+### Verification Checklist (Production)
+
+**With `APP_MARKET_LOCK=NZ` set:**
+
+**Signup/Trial Page (`/signup`):**
+- [ ] Country selector is hidden (not visible in form)
+- [ ] Form defaults to "New Zealand" (check hidden input value in DevTools)
+- [ ] Service area placeholder shows "e.g., Auckland Central, Wellington" (NOT Sydney)
+- [ ] Submit attempt with `country: "Australia"` via API is rejected with HTTP 400
+
+**Onboarding Page (`/onboarding`):**
+- [ ] Country selector hidden
+- [ ] Form defaults to "New Zealand"
+- [ ] Service area placeholder shows NZ examples
+
+**Profile Page (`/profile`):**
+- [ ] Service area placeholder shows NZ examples
+
+**Dashboard - Quick Access Panel:**
+- [ ] Tax button shows "Tax & GST Returns" (NOT "Tax & BAS")
+
+**Backend Enforcement:**
+- [ ] POST `/api/user/onboarding` with `{ country: "Australia" }` returns:
+  ```json
+  { "message": "Australia is not supported yet. New Zealand only.", "field": "country" }
+  ```
+- [ ] Server logs show: `[ONBOARDING] Blocked country: Australia`
+
+**Prevention Script:**
+- [ ] Run `npm run lint:market` locally
+- [ ] Should pass with: "✅ No market leakage detected"
+- [ ] Adding "Sydney" to a component file → should fail with violation report
+
+**Commits:** `50a65db` (comprehensive NZ lock + prevention)
+
+---
+
 ## Next Steps After This Playbook
 
 When encountering new bugs:
