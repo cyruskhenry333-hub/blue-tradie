@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/require-auth";
 import { storage } from "../storage";
+import { isCountryAllowed } from "../../shared/market-config";
 
 const APP_HOME_PATH = "/";
 
@@ -40,7 +41,16 @@ onboardingRouter.post("/api/user/onboarding", requireAuth, async (req: Request, 
     }).onConflictDoNothing();
 
     const { businessName, trade, serviceArea, country, isGstRegistered } = onboardingData;
-    
+
+    // Market lock enforcement - reject countries not allowed in this environment
+    if (!isCountryAllowed(country)) {
+      console.log(`[ONBOARDING] Blocked country: ${country}`);
+      return res.status(400).json({
+        message: "Australia is not supported yet. New Zealand only.",
+        field: "country"
+      });
+    }
+
     // Update user in database (works for both demo and regular users)
     await storage.updateUserOnboarding(userId, {
       businessName,

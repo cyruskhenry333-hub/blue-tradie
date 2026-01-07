@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getAllowedCountries, getDefaultCountry } from "@shared/market-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -19,7 +20,7 @@ const onboardingSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
   trade: z.string().min(1, "Please select your trade"),
   serviceArea: z.string().min(2, "Service area must be at least 2 characters"),
-  country: z.enum(["Australia", "New Zealand"], { required_error: "Please select your country" }),
+  country: z.enum(getAllowedCountries() as [string, ...string[]], { required_error: "Please select your country" }),
   businessType: z.enum(["new", "existing"]),
   isGstRegistered: z.boolean().default(false),
   experience: z.string().optional(),
@@ -66,7 +67,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       businessName: "",
       trade: "",
       serviceArea: "",
-      country: "Australia",
+      country: getDefaultCountry(),
       businessType: "new",
       isGstRegistered: false,
       experience: "",
@@ -269,27 +270,34 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value || "Australia"}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your country" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Australia">🇦🇺 Australia</SelectItem>
-                              <SelectItem value="New Zealand">🇳🇿 New Zealand</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {getAllowedCountries().length > 1 ? (
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select your country" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {getAllowedCountries().map(country => (
+                                  <SelectItem key={country} value={country}>
+                                    {country === "Australia" ? "🇦🇺" : "🇳🇿"} {country}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <input type="hidden" {...form.register("country")} value={getDefaultCountry()} />
+                    )}
 
                     <FormField
                       control={form.control}
