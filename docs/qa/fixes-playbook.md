@@ -559,6 +559,242 @@ import { getAllowedCountries, getDefaultCountry, getServiceAreaPlaceholder } fro
 
 ---
 
+## Fix #3B: CRITICAL Follow-up - Browser Runtime Config for Market Lock
+
+### Symptom (After Fix #3)
+- Fix #3 deployed to production with `APP_MARKET_LOCK=NZ` set in Render
+- **Tested in incognito window (no cache/PWA issues)**
+- `/signup` STILL shows "AU Australia" as default country
+- Service area placeholder STILL shows "Sydney Metro, Melbourne CBD"
+- Backend enforcement works (rejects AU submissions) ✅
+- Frontend UI still defaults to AU ❌
+
+### Root Cause
+**Critical oversight:** Browser cannot read `process.env.APP_MARKET_LOCK` at runtime.
+
+**How environment variables work:**
+- **Server (Node.js):** `process.env` populated at runtime from Render env vars ✅
+- **Client (Browser):** Vite replaces `process.env.*` at **BUILD time**, not runtime ❌
+
+**What happened:**
+1. We build the app once (in CI or locally)
+2. At build time, `APP_MARKET_LOCK` is undefined (not set during build)
+3. Vite replaces `process.env.APP_MARKET_LOCK` with `undefined` in bundled code
+4. Build output is deployed to Render
+5. Render sets `APP_MARKET_LOCK=NZ` but browser code already has `undefined` baked in
+
+**Result:**
+- `shared/market-config.ts` line 9: `export const MARKET_LOCK = process.env.APP_MARKET_LOCK || null;`
+- On server: Works (reads from runtime env) ✅
+- In browser: Always `null` (already replaced at build time) ❌
+- `getAllowedCountries()` always returns `['Australia', 'New Zealand']`
+- `getDefaultCountry()` always returns `'Australia'`
+
+### How We Proved It
+1. **User evidence (incognito):**
+   - Eliminated cache/PWA as cause
+   - Signup form still showed AU default
+
+2. **Code inspection:**
+   - `shared/market-config.ts:9` uses `process.env.APP_MARKET_LOCK`
+   - This works server-side but NOT client-side
+
+3. **Build-time vs Runtime:**
+   - Environment variables in Vite are replaced at build time
+   - Production env vars set in Render are NOT available to browser
+
+### Minimal Code Changes
+
+**Fix 1: Server-Injected Runtime Config**
+
+**File:** `server/vite.ts`
+
+**Added Helper Function:**
+```typescript
+/**
+ * Inject runtime config into HTML
+ * Provides browser access to server-side env vars like APP_MARKET_LOCK
+ */
+function injectRuntimeConfig(html: string): string {
+  const marketLock = process.env.APP_MARKET_LOCK || null;
+  const config = {
+    marketLock,
+  };
+
+  const configScript = `<script>window.__BT_CONFIG__ = ${JSON.stringify(config)};</script>`;
+
+  // Inject before closing </head> tag if it exists, otherwise before </body>
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${configScript}</head>`);
+  } else if (html.includes('</body>')) {
+    return html.replace('</body>', `${configScript}</body>`);
+  }
+
+  // Fallback: prepend to HTML
+  return configScript + html;
+}
+```
+
+**Applied in Dev Mode (setupVite):**
+```typescript
+// Line 85-86: Inject runtime config before Vite transform
+template = injectRuntimeConfig(template);
+```
+
+**Applied in Prod Mode (serveStatic):**
+```typescript
+// Lines 142-146: Protected routes
+app.get(route, requireAuth, (req: any, res) => {
+  const htmlPath = path.resolve(distPath, "index.html");
+  let html = fs.readFileSync(htmlPath, 'utf-8');
+  html = injectRuntimeConfig(html);
+  res.status(200).set({ "Content-Type": "text/html" }).end(html);
+});
+
+// Lines 151-156: Fallback route
+app.use("*", (_req, res) => {
+  const htmlPath = path.resolve(distPath, "index.html");
+  let html = fs.readFileSync(htmlPath, 'utf-8');
+  html = injectRuntimeConfig(html);
+  res.status(200).set({ "Content-Type": "text/html" }).end(html);
+});
+```
+
+**Why this works:**
+- Server reads `process.env.APP_MARKET_LOCK` at runtime (has access to Render env vars)
+- Injects `<script>window.__BT_CONFIG__ = { marketLock: "NZ" };</script>` into HTML
+- Browser receives this script and can access config via `window.__BT_CONFIG__`
+
+**Fix 2: Update market-config.ts to Read from Window in Browser**
+
+**File:** `shared/market-config.ts`
+
+**Before:**
+```typescript
+export const MARKET_LOCK = process.env.APP_MARKET_LOCK || null;
+
+export function getAllowedCountries(): readonly string[] {
+  if (MARKET_LOCK === 'NZ') {
+    return ['New Zealand'];
+  }
+  if (MARKET_LOCK === 'AU') {
+    return ['Australia'];
+  }
+  return ALL_COUNTRIES;
+}
+```
+
+**After:**
+```typescript
+// TypeScript declaration for injected config
+declare global {
+  interface Window {
+    __BT_CONFIG__?: {
+      marketLock: string | null;
+    };
+  }
+}
+
+/**
+ * Get market lock value at runtime
+ * Works in both browser (via injected window.__BT_CONFIG__) and server (via process.env)
+ */
+function getMarketLock(): string | null {
+  // In browser: read from injected config
+  if (typeof window !== 'undefined') {
+    return window.__BT_CONFIG__?.marketLock || null;
+  }
+
+  // On server: read from environment variable
+  return process.env.APP_MARKET_LOCK || null;
+}
+
+export function getAllowedCountries(): readonly string[] {
+  const marketLock = getMarketLock();
+
+  if (marketLock === 'NZ') {
+    return ['New Zealand'];
+  }
+  if (marketLock === 'AU') {
+    return ['Australia'];
+  }
+  return ALL_COUNTRIES;
+}
+```
+
+**Why this works:**
+- `typeof window !== 'undefined'` detects if running in browser or server
+- Browser: reads from `window.__BT_CONFIG__?.marketLock` (injected by server)
+- Server: reads from `process.env.APP_MARKET_LOCK` (runtime env var)
+- All helper functions (`getAllowedCountries()`, `getDefaultCountry()`, etc.) now get correct value
+
+**Fix 3: Add Client Verification Log**
+
+**File:** `client/src/main.tsx`
+
+**Added:**
+```typescript
+import { getAllowedCountries } from "@shared/market-config";
+
+// Market lock diagnostic (helps verify runtime config injection)
+console.log('[MARKET]', {
+  lock: window.__BT_CONFIG__?.marketLock || 'none',
+  allowedCountries: getAllowedCountries(),
+});
+```
+
+**Why this helps:**
+- Runs once at app startup
+- Visible in browser console for easy debugging
+- Confirms config injection worked:
+  - `lock: "NZ"` (not "none")
+  - `allowedCountries: ["New Zealand"]` (not both)
+
+### Verification Checklist (Production - Incognito Window)
+
+**With `APP_MARKET_LOCK=NZ` set in Render:**
+
+**1. Browser Console (Open DevTools before loading):**
+- [ ] Visit https://bluetradie.com/signup
+- [ ] Console shows: `[MARKET] { lock: "NZ", allowedCountries: ["New Zealand"] }`
+  - If shows `lock: "none"`, injection failed
+  - If shows both countries, market lock not applied
+
+**2. View Page Source (Right-click → View Page Source):**
+- [ ] Search for `__BT_CONFIG__`
+- [ ] Should find: `<script>window.__BT_CONFIG__ = {"marketLock":"NZ"};</script>`
+- [ ] Located in `<head>` section (before other scripts)
+
+**3. Signup Form UI:**
+- [ ] Country selector is **hidden** (inspect element - should be hidden input, not dropdown)
+- [ ] Service area placeholder shows "**e.g., Auckland Central, Wellington**" (NOT Sydney/Melbourne)
+- [ ] Form defaults to "New Zealand" (check hidden input value in Elements tab)
+
+**4. All Other Pages (onboarding, profile, dashboard):**
+- [ ] Onboarding: Country hidden, NZ placeholders
+- [ ] Profile: NZ service area placeholder
+- [ ] Dashboard Quick Access: "Tax & GST Returns" (NOT "Tax & BAS")
+
+**5. Backend Still Enforces:**
+- [ ] POST to `/api/user/onboarding` with `country: "Australia"` → HTTP 400
+
+### Deployment Gotchas
+
+**Why this is the ONLY solution:**
+- Cannot use `VITE_*` env vars (they're replaced at build time, not runtime)
+- Cannot use separate builds per environment (want single build deployed everywhere)
+- Cannot use API call to fetch config (race condition - components render before fetch completes)
+- Server-injected HTML is the clean, reliable way to pass runtime config to browser
+
+**Cache considerations:**
+- Users visiting after deploy will get new HTML with injected config
+- Service worker caches are versioned and should update automatically
+- If issues persist, hard refresh (Ctrl+Shift+R) bypasses all caches
+
+**Commits:** `eb3d638` (browser runtime config injection)
+
+---
+
 ## Next Steps After This Playbook
 
 When encountering new bugs:
