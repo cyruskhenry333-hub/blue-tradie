@@ -4,9 +4,34 @@
  * Controls which countries/markets are allowed for new signups.
  * Set APP_MARKET_LOCK=NZ in production to restrict to New Zealand only.
  * Leave empty or unset in dev to allow all markets.
+ *
+ * Runtime config injection:
+ * - Server: reads process.env.APP_MARKET_LOCK at runtime
+ * - Client: reads window.__BT_CONFIG__.marketLock (injected by server)
  */
 
-export const MARKET_LOCK = process.env.APP_MARKET_LOCK || null;
+// TypeScript declaration for injected config
+declare global {
+  interface Window {
+    __BT_CONFIG__?: {
+      marketLock: string | null;
+    };
+  }
+}
+
+/**
+ * Get market lock value at runtime
+ * Works in both browser (via injected window.__BT_CONFIG__) and server (via process.env)
+ */
+function getMarketLock(): string | null {
+  // In browser: read from injected config
+  if (typeof window !== 'undefined') {
+    return window.__BT_CONFIG__?.marketLock || null;
+  }
+
+  // On server: read from environment variable
+  return process.env.APP_MARKET_LOCK || null;
+}
 
 export const ALL_COUNTRIES = ['Australia', 'New Zealand'] as const;
 export type Country = typeof ALL_COUNTRIES[number];
@@ -15,10 +40,12 @@ export type Country = typeof ALL_COUNTRIES[number];
  * Get list of countries allowed based on market lock setting
  */
 export function getAllowedCountries(): readonly string[] {
-  if (MARKET_LOCK === 'NZ') {
+  const marketLock = getMarketLock();
+
+  if (marketLock === 'NZ') {
     return ['New Zealand'];
   }
-  if (MARKET_LOCK === 'AU') {
+  if (marketLock === 'AU') {
     return ['Australia'];
   }
   // Default: allow all

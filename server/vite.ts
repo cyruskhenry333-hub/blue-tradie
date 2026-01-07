@@ -19,6 +19,29 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+/**
+ * Inject runtime config into HTML
+ * Provides browser access to server-side env vars like APP_MARKET_LOCK
+ */
+function injectRuntimeConfig(html: string): string {
+  const marketLock = process.env.APP_MARKET_LOCK || null;
+  const config = {
+    marketLock,
+  };
+
+  const configScript = `<script>window.__BT_CONFIG__ = ${JSON.stringify(config)};</script>`;
+
+  // Inject before closing </head> tag if it exists, otherwise before </body>
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${configScript}</head>`);
+  } else if (html.includes('</body>')) {
+    return html.replace('</body>', `${configScript}</body>`);
+  }
+
+  // Fallback: prepend to HTML
+  return configScript + html;
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -58,6 +81,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
+
+      // Inject runtime config before Vite transform
+      template = injectRuntimeConfig(template);
+
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -113,12 +140,18 @@ export function serveStatic(app: Express) {
   
   protectedRoutes.forEach(route => {
     app.get(route, requireAuth, (req: any, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
+      const htmlPath = path.resolve(distPath, "index.html");
+      let html = fs.readFileSync(htmlPath, 'utf-8');
+      html = injectRuntimeConfig(html);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
     });
   });
 
   // fall through to index.html if the file doesn't exist (for public routes)
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const htmlPath = path.resolve(distPath, "index.html");
+    let html = fs.readFileSync(htmlPath, 'utf-8');
+    html = injectRuntimeConfig(html);
+    res.status(200).set({ "Content-Type": "text/html" }).end(html);
   });
 }
