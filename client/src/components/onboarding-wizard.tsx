@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getAllowedCountries, getDefaultCountry } from "@shared/market-config";
+import { getAllowedCountries, getDefaultCountry, getServiceAreaPlaceholder } from "@shared/market-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -306,7 +306,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                         <FormItem>
                           <FormLabel>Service Area</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Sydney Metro, Auckland Central" {...field} />
+                            <Input placeholder={getServiceAreaPlaceholder()} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

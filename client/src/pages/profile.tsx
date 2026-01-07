@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getServiceAreaPlaceholder } from "@shared/market-config";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -276,7 +277,7 @@ export default function Profile() {
                         <span>Service Area</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Sydney Metro, Auckland Central" {...field} />
+                        <Input placeholder={getServiceAreaPlaceholder()} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

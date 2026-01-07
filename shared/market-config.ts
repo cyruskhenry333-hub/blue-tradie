@@ -39,3 +39,67 @@ export function getDefaultCountry(): string {
   const allowed = getAllowedCountries();
   return allowed[0]; // First allowed country
 }
+
+/**
+ * Market-specific UI defaults and placeholders
+ *
+ * These functions return appropriate defaults based on the current market lock.
+ * When only NZ is allowed, returns NZ examples. When only AU, returns AU examples.
+ * When both allowed, returns neutral or dual examples.
+ */
+
+/**
+ * Get service area placeholder text
+ */
+export function getServiceAreaPlaceholder(): string {
+  const defaultCountry = getDefaultCountry();
+
+  if (defaultCountry === 'New Zealand') {
+    return 'e.g., Auckland Central, Wellington';
+  }
+  if (defaultCountry === 'Australia') {
+    return 'e.g., Sydney Metro, Melbourne CBD';
+  }
+  // Both allowed - show examples from both
+  return 'e.g., Sydney Metro, Auckland Central';
+}
+
+/**
+ * Get currency code for the default market
+ */
+export function getDefaultCurrency(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'NZD' : 'AUD';
+}
+
+/**
+ * Get business ID label (ABN vs NZBN)
+ */
+export function getBusinessIdLabel(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'NZBN' : 'ABN';
+}
+
+/**
+ * Get tax authority name (ATO vs IRD)
+ */
+export function getTaxAuthority(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'IRD' : 'ATO';
+}
+
+/**
+ * Get tax forms label (BAS vs GST Returns)
+ */
+export function getTaxFormsLabel(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? 'GST Returns' : 'BAS';
+}
+
+/**
+ * Get GST rate as string
+ */
+export function getGSTRate(): string {
+  const defaultCountry = getDefaultCountry();
+  return defaultCountry === 'New Zealand' ? '15%' : '10%';
+}

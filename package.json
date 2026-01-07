@@ -10,6 +10,7 @@
     "start:worker": "cross-env NODE_ENV=production node dist/worker.js",
     "worker": "tsx server/worker.ts",
     "check": "tsc",
+    "lint:market": "node scripts/check-market-leakage.cjs",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx scripts/run-migrations.ts",
     "db:seed": "tsx server/db/seed.ts",

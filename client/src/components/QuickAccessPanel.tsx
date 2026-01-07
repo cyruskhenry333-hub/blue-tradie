@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getTaxFormsLabel } from "@shared/market-config";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,7 +120,7 @@ export default function QuickAccessPanel() {
     },
     {
       id: "tax",
-      title: "Tax & BAS",
+      title: `Tax & ${getTaxFormsLabel()}`,
       description: "GST and tax management",
       icon: Calculator,
       href: "/tax",

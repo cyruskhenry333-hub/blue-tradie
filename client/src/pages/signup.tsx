@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getAllowedCountries, getDefaultCountry, getServiceAreaPlaceholder } from "@shared/market-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -21,7 +22,7 @@ const signupSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
   trade: z.string().min(1, "Please select your trade"),
   serviceArea: z.string().min(2, "Service area must be at least 2 characters"),
-  country: z.enum(["Australia", "New Zealand"], { required_error: "Please select your country" }),
+  country: z.enum(getAllowedCountries() as [string, ...string[]], { required_error: "Please select your country" }),
   isGstRegistered: z.boolean().default(false),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the terms and conditions"),
 });
@@ -52,7 +53,7 @@ export default function Signup() {
       businessName: "",
       trade: "",
       serviceArea: "",
-      country: "Australia",
+      country: getDefaultCountry(),
       isGstRegistered: false,
       agreeToTerms: false,
     },
@@ -267,27 +268,34 @@ export default function Signup() {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="country"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Country</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select your country" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Australia">🇦🇺 Australia</SelectItem>
-                                <SelectItem value="New Zealand">🇳🇿 New Zealand</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {getAllowedCountries().length > 1 ? (
+                        <FormField
+                          control={form.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select your country" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {getAllowedCountries().map(country => (
+                                    <SelectItem key={country} value={country}>
+                                      {country === "Australia" ? "🇦🇺" : "🇳🇿"} {country}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <input type="hidden" {...form.register("country")} value={getDefaultCountry()} />
+                      )}
                     </div>
 
                     <FormField
@@ -297,7 +305,7 @@ export default function Signup() {
                         <FormItem>
                           <FormLabel>Service Area</FormLabel>
                           <FormControl>
-                            <Input placeholder="Sydney, NSW" {...field} />
+                            <Input placeholder={getServiceAreaPlaceholder()} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
