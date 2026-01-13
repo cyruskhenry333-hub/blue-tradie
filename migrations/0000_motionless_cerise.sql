@@ -1,4 +1,4 @@
-CREATE TABLE "ai_responses" (
+CREATE TABLE IF NOT EXISTS "ai_responses" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"query" varchar(1000) NOT NULL,
 	"response" text NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE "ai_responses" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "analytics_events" (
+CREATE TABLE IF NOT EXISTS "analytics_events" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar,
 	"session_id" varchar,
@@ -21,7 +21,7 @@ CREATE TABLE "analytics_events" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "analytics_metrics" (
+CREATE TABLE IF NOT EXISTS "analytics_metrics" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"metric_date" timestamp NOT NULL,
 	"metric_type" varchar(100) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE "analytics_metrics" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "analytics_sessions" (
+CREATE TABLE IF NOT EXISTS "analytics_sessions" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"user_id" varchar,
 	"started_at" timestamp DEFAULT now() NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE "analytics_sessions" (
 	"ip_address" varchar(45)
 );
 --> statement-breakpoint
-CREATE TABLE "auth_sessions" (
+CREATE TABLE IF NOT EXISTS "auth_sessions" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE "auth_sessions" (
 	"user_agent" text
 );
 --> statement-breakpoint
-CREATE TABLE "automation_executions" (
+CREATE TABLE IF NOT EXISTS "automation_executions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"rule_id" integer NOT NULL,
 	"user_id" varchar NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE "automation_executions" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "automation_rules" (
+CREATE TABLE IF NOT EXISTS "automation_rules" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"name" varchar NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE "automation_rules" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "bas_reports" (
+CREATE TABLE IF NOT EXISTS "bas_reports" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"period_start" timestamp NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE "bas_reports" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "beta_invites" (
+CREATE TABLE IF NOT EXISTS "beta_invites" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"code" varchar NOT NULL,
 	"email" varchar,
@@ -130,7 +130,7 @@ CREATE TABLE "beta_invites" (
 	CONSTRAINT "beta_invites_code_unique" UNIQUE("code")
 );
 --> statement-breakpoint
-CREATE TABLE "business_metrics" (
+CREATE TABLE IF NOT EXISTS "business_metrics" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"metric_date" timestamp NOT NULL,
@@ -149,7 +149,7 @@ CREATE TABLE "business_metrics" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "calendar_events" (
+CREATE TABLE IF NOT EXISTS "calendar_events" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"title" varchar NOT NULL,
@@ -177,7 +177,7 @@ CREATE TABLE "calendar_events" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "calendar_sync_settings" (
+CREATE TABLE IF NOT EXISTS "calendar_sync_settings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"google_enabled" boolean DEFAULT false,
@@ -202,7 +202,7 @@ CREATE TABLE "calendar_sync_settings" (
 	CONSTRAINT "calendar_sync_settings_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "chat_messages" (
+CREATE TABLE IF NOT EXISTS "chat_messages" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"agent_type" varchar NOT NULL,
@@ -211,7 +211,7 @@ CREATE TABLE "chat_messages" (
 	"timestamp" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "customer_portal_tokens" (
+CREATE TABLE IF NOT EXISTS "customer_portal_tokens" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"customer_email" varchar NOT NULL,
@@ -229,7 +229,7 @@ CREATE TABLE "customer_portal_tokens" (
 	CONSTRAINT "customer_portal_tokens_token_hash_unique" UNIQUE("token_hash")
 );
 --> statement-breakpoint
-CREATE TABLE "demo_tokens" (
+CREATE TABLE IF NOT EXISTS "demo_tokens" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"token" varchar NOT NULL,
 	"user_id" varchar,
@@ -244,7 +244,7 @@ CREATE TABLE "demo_tokens" (
 	CONSTRAINT "demo_tokens_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE "document_access_logs" (
+CREATE TABLE IF NOT EXISTS "document_access_logs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"document_id" integer NOT NULL,
 	"user_id" varchar,
@@ -254,7 +254,7 @@ CREATE TABLE "document_access_logs" (
 	"accessed_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "documents" (
+CREATE TABLE IF NOT EXISTS "documents" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"file_name" varchar NOT NULL,
@@ -286,7 +286,7 @@ CREATE TABLE "documents" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "expenses" (
+CREATE TABLE IF NOT EXISTS "expenses" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"description" text NOT NULL,
@@ -300,7 +300,7 @@ CREATE TABLE "expenses" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "feature_requests" (
+CREATE TABLE IF NOT EXISTS "feature_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"title" varchar(200) NOT NULL,
@@ -313,7 +313,7 @@ CREATE TABLE "feature_requests" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "feedback_submissions" (
+CREATE TABLE IF NOT EXISTS "feedback_submissions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"type" varchar NOT NULL,
@@ -325,7 +325,7 @@ CREATE TABLE "feedback_submissions" (
 	"resolved_at" timestamp
 );
 --> statement-breakpoint
-CREATE TABLE "idempotency_keys" (
+CREATE TABLE IF NOT EXISTS "idempotency_keys" (
 	"id" text PRIMARY KEY NOT NULL,
 	"scope" text NOT NULL,
 	"resource_id" text,
@@ -337,7 +337,7 @@ CREATE TABLE "idempotency_keys" (
 	"expires_at" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "invoices" (
+CREATE TABLE IF NOT EXISTS "invoices" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"job_id" integer,
@@ -364,7 +364,7 @@ CREATE TABLE "invoices" (
 	CONSTRAINT "idx_invoices_number_unique" UNIQUE("invoice_number")
 );
 --> statement-breakpoint
-CREATE TABLE "jobs" (
+CREATE TABLE IF NOT EXISTS "jobs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"customer_name" varchar NOT NULL,
@@ -380,7 +380,7 @@ CREATE TABLE "jobs" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "magic_link_tokens" (
+CREATE TABLE IF NOT EXISTS "magic_link_tokens" (
 	"id" text PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"user_id" text,
@@ -394,7 +394,7 @@ CREATE TABLE "magic_link_tokens" (
 	CONSTRAINT "magic_link_tokens_token_hash_unique" UNIQUE("token_hash")
 );
 --> statement-breakpoint
-CREATE TABLE "organization_users" (
+CREATE TABLE IF NOT EXISTS "organization_users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"organization_id" varchar NOT NULL,
@@ -405,7 +405,7 @@ CREATE TABLE "organization_users" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "organizations" (
+CREATE TABLE IF NOT EXISTS "organizations" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"name" varchar NOT NULL,
 	"type" varchar DEFAULT 'demo',
@@ -414,7 +414,7 @@ CREATE TABLE "organizations" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "public_waitlist" (
+CREATE TABLE IF NOT EXISTS "public_waitlist" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"ip" varchar(45),
@@ -424,7 +424,7 @@ CREATE TABLE "public_waitlist" (
 	CONSTRAINT "public_waitlist_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "quotes" (
+CREATE TABLE IF NOT EXISTS "quotes" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"job_id" integer,
@@ -455,7 +455,7 @@ CREATE TABLE "quotes" (
 	CONSTRAINT "idx_quotes_user_year_sequence" UNIQUE("user_id","year_sequence")
 );
 --> statement-breakpoint
-CREATE TABLE "review_requests" (
+CREATE TABLE IF NOT EXISTS "review_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"job_id" integer,
@@ -476,7 +476,7 @@ CREATE TABLE "review_requests" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "roadmap_items" (
+CREATE TABLE IF NOT EXISTS "roadmap_items" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"title" varchar(200) NOT NULL,
 	"description" text NOT NULL,
@@ -499,7 +499,7 @@ CREATE TABLE "roadmap_items" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "roadmap_votes" (
+CREATE TABLE IF NOT EXISTS "roadmap_votes" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"roadmap_item_id" integer NOT NULL,
@@ -507,13 +507,13 @@ CREATE TABLE "roadmap_votes" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "sessions" (
+CREATE TABLE IF NOT EXISTS "sessions" (
 	"sid" varchar PRIMARY KEY NOT NULL,
 	"sess" jsonb NOT NULL,
 	"expire" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "system_settings" (
+CREATE TABLE IF NOT EXISTS "system_settings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"setting_key" varchar NOT NULL,
 	"setting_value" text,
@@ -522,7 +522,7 @@ CREATE TABLE "system_settings" (
 	CONSTRAINT "system_settings_setting_key_unique" UNIQUE("setting_key")
 );
 --> statement-breakpoint
-CREATE TABLE "tax_categories" (
+CREATE TABLE IF NOT EXISTS "tax_categories" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar NOT NULL,
 	"description" text,
@@ -535,7 +535,7 @@ CREATE TABLE "tax_categories" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "tax_deductions" (
+CREATE TABLE IF NOT EXISTS "tax_deductions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"suggestion_type" varchar NOT NULL,
@@ -553,7 +553,7 @@ CREATE TABLE "tax_deductions" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "tax_settings" (
+CREATE TABLE IF NOT EXISTS "tax_settings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"abn" varchar(11),
@@ -572,7 +572,7 @@ CREATE TABLE "tax_settings" (
 	CONSTRAINT "tax_settings_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "team_invitations" (
+CREATE TABLE IF NOT EXISTS "team_invitations" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"owner_id" varchar NOT NULL,
 	"email" varchar NOT NULL,
@@ -589,7 +589,7 @@ CREATE TABLE "team_invitations" (
 	CONSTRAINT "team_invitations_token_hash_unique" UNIQUE("token_hash")
 );
 --> statement-breakpoint
-CREATE TABLE "team_members" (
+CREATE TABLE IF NOT EXISTS "team_members" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"owner_id" varchar NOT NULL,
 	"member_id" varchar NOT NULL,
@@ -602,7 +602,7 @@ CREATE TABLE "team_members" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "testimonials" (
+CREATE TABLE IF NOT EXISTS "testimonials" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"content" text NOT NULL,
@@ -616,7 +616,7 @@ CREATE TABLE "testimonials" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "token_alerts" (
+CREATE TABLE IF NOT EXISTS "token_alerts" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
 	"alert_type" varchar(50) NOT NULL,
@@ -626,7 +626,7 @@ CREATE TABLE "token_alerts" (
 	"sent_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "token_ledger" (
+CREATE TABLE IF NOT EXISTS "token_ledger" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
 	"amount" integer NOT NULL,
@@ -640,7 +640,7 @@ CREATE TABLE "token_ledger" (
 	CONSTRAINT "token_ledger_idempotency_key_unique" UNIQUE("idempotency_key")
 );
 --> statement-breakpoint
-CREATE TABLE "token_usage" (
+CREATE TABLE IF NOT EXISTS "token_usage" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar NOT NULL,
 	"tokens_used" integer NOT NULL,
@@ -650,7 +650,7 @@ CREATE TABLE "token_usage" (
 	"timestamp" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "trial_emails" (
+CREATE TABLE IF NOT EXISTS "trial_emails" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar NOT NULL,
 	"email_type" varchar NOT NULL,
@@ -659,7 +659,7 @@ CREATE TABLE "trial_emails" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
 	"id" varchar PRIMARY KEY NOT NULL,
 	"email" varchar,
 	"first_name" varchar,
@@ -758,7 +758,7 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "waitlist" (
+CREATE TABLE IF NOT EXISTS "waitlist" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" varchar NOT NULL,
 	"first_name" varchar,
@@ -786,7 +786,7 @@ CREATE TABLE "waitlist" (
 	CONSTRAINT "waitlist_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "waitlist_entries" (
+CREATE TABLE IF NOT EXISTS "waitlist_entries" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" varchar NOT NULL,
 	"first_name" varchar,
@@ -799,7 +799,7 @@ CREATE TABLE "waitlist_entries" (
 	CONSTRAINT "waitlist_entries_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "webhook_events" (
+CREATE TABLE IF NOT EXISTS "webhook_events" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"provider" text NOT NULL,
 	"provider_event_id" text NOT NULL,
@@ -871,69 +871,69 @@ ALTER TABLE "token_alerts" ADD CONSTRAINT "token_alerts_user_id_users_id_fk" FOR
 ALTER TABLE "token_ledger" ADD CONSTRAINT "token_ledger_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "token_usage" ADD CONSTRAINT "token_usage_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "trial_emails" ADD CONSTRAINT "trial_emails_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_analytics_user_id" ON "analytics_events" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_analytics_event_type" ON "analytics_events" USING btree ("event_type");--> statement-breakpoint
-CREATE INDEX "idx_analytics_created_at" ON "analytics_events" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_analytics_session_id" ON "analytics_events" USING btree ("session_id");--> statement-breakpoint
-CREATE INDEX "idx_metrics_date_type" ON "analytics_metrics" USING btree ("metric_date","metric_type");--> statement-breakpoint
-CREATE INDEX "idx_sessions_user_id" ON "analytics_sessions" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_sessions_started_at" ON "analytics_sessions" USING btree ("started_at");--> statement-breakpoint
-CREATE INDEX "idx_auth_sessions_user_id" ON "auth_sessions" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_auth_sessions_expires_at" ON "auth_sessions" USING btree ("expires_at");--> statement-breakpoint
-CREATE INDEX "idx_automation_exec_rule" ON "automation_executions" USING btree ("rule_id");--> statement-breakpoint
-CREATE INDEX "idx_automation_exec_user" ON "automation_executions" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_automation_exec_status" ON "automation_executions" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_automation_exec_scheduled" ON "automation_executions" USING btree ("scheduled_for");--> statement-breakpoint
-CREATE INDEX "idx_automation_rules_user" ON "automation_rules" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_automation_rules_active" ON "automation_rules" USING btree ("is_active");--> statement-breakpoint
-CREATE INDEX "idx_automation_rules_trigger" ON "automation_rules" USING btree ("trigger_type");--> statement-breakpoint
-CREATE INDEX "idx_bas_user_period" ON "bas_reports" USING btree ("user_id","period_end");--> statement-breakpoint
-CREATE INDEX "idx_business_metrics_user_date" ON "business_metrics" USING btree ("user_id","metric_date");--> statement-breakpoint
-CREATE INDEX "idx_calendar_events_user" ON "calendar_events" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_calendar_events_start" ON "calendar_events" USING btree ("start_time");--> statement-breakpoint
-CREATE INDEX "idx_calendar_events_job" ON "calendar_events" USING btree ("job_id");--> statement-breakpoint
-CREATE INDEX "idx_calendar_events_google" ON "calendar_events" USING btree ("google_event_id");--> statement-breakpoint
-CREATE INDEX "idx_calendar_events_outlook" ON "calendar_events" USING btree ("outlook_event_id");--> statement-breakpoint
-CREATE INDEX "idx_calendar_sync_user" ON "calendar_sync_settings" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_customer_tokens_hash" ON "customer_portal_tokens" USING btree ("token_hash");--> statement-breakpoint
-CREATE INDEX "idx_customer_tokens_email" ON "customer_portal_tokens" USING btree ("customer_email");--> statement-breakpoint
-CREATE INDEX "idx_customer_tokens_expires" ON "customer_portal_tokens" USING btree ("expires_at");--> statement-breakpoint
-CREATE INDEX "idx_doc_access_document" ON "document_access_logs" USING btree ("document_id");--> statement-breakpoint
-CREATE INDEX "idx_doc_access_user" ON "document_access_logs" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_doc_access_time" ON "document_access_logs" USING btree ("accessed_at");--> statement-breakpoint
-CREATE INDEX "idx_documents_user" ON "documents" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_documents_job" ON "documents" USING btree ("job_id");--> statement-breakpoint
-CREATE INDEX "idx_documents_invoice" ON "documents" USING btree ("invoice_id");--> statement-breakpoint
-CREATE INDEX "idx_documents_quote" ON "documents" USING btree ("quote_id");--> statement-breakpoint
-CREATE INDEX "idx_documents_type" ON "documents" USING btree ("document_type");--> statement-breakpoint
-CREATE INDEX "idx_documents_created" ON "documents" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_idempotency_scope" ON "idempotency_keys" USING btree ("scope","created_at");--> statement-breakpoint
-CREATE INDEX "idx_idempotency_expires" ON "idempotency_keys" USING btree ("expires_at");--> statement-breakpoint
-CREATE INDEX "idx_invoices_user_id" ON "invoices" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_invoices_status" ON "invoices" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_invoices_user_status_date" ON "invoices" USING btree ("user_id","status","created_at");--> statement-breakpoint
-CREATE INDEX "idx_invoices_stripe_payment_intent" ON "invoices" USING btree ("stripe_payment_intent_id");--> statement-breakpoint
-CREATE INDEX "idx_magic_tokens_hash" ON "magic_link_tokens" USING btree ("token_hash");--> statement-breakpoint
-CREATE INDEX "idx_magic_tokens_email" ON "magic_link_tokens" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "idx_magic_tokens_expires_at" ON "magic_link_tokens" USING btree ("expires_at");--> statement-breakpoint
-CREATE INDEX "user_org_idx" ON "organization_users" USING btree ("user_id","organization_id");--> statement-breakpoint
-CREATE INDEX "idx_quotes_user_id" ON "quotes" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_quotes_status" ON "quotes" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_quotes_customer_email" ON "quotes" USING btree ("customer_email");--> statement-breakpoint
-CREATE INDEX "idx_quotes_user_status_date" ON "quotes" USING btree ("user_id","status","created_at");--> statement-breakpoint
-CREATE INDEX "idx_review_requests_user" ON "review_requests" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_review_requests_job" ON "review_requests" USING btree ("job_id");--> statement-breakpoint
-CREATE INDEX "idx_review_requests_status" ON "review_requests" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "IDX_session_expire" ON "sessions" USING btree ("expire");--> statement-breakpoint
-CREATE INDEX "idx_tax_categories_category" ON "tax_categories" USING btree ("category");--> statement-breakpoint
-CREATE INDEX "idx_tax_deductions_user_status" ON "tax_deductions" USING btree ("user_id","status");--> statement-breakpoint
-CREATE INDEX "idx_team_invites_owner" ON "team_invitations" USING btree ("owner_id");--> statement-breakpoint
-CREATE INDEX "idx_team_invites_email" ON "team_invitations" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "idx_team_invites_token_hash" ON "team_invitations" USING btree ("token_hash");--> statement-breakpoint
-CREATE INDEX "idx_team_invites_status" ON "team_invitations" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_team_members_owner" ON "team_members" USING btree ("owner_id");--> statement-breakpoint
-CREATE INDEX "idx_team_members_member" ON "team_members" USING btree ("member_id");--> statement-breakpoint
-CREATE INDEX "idx_team_members_status" ON "team_members" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_team_members_unique" ON "team_members" USING btree ("owner_id","member_id");--> statement-breakpoint
-CREATE INDEX "idx_webhook_events_status" ON "webhook_events" USING btree ("status","created_at");--> statement-breakpoint
-CREATE INDEX "idx_webhook_events_provider_type" ON "webhook_events" USING btree ("provider","event_type");
+CREATE INDEX IF NOT EXISTS "idx_analytics_user_id" ON "analytics_events" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_analytics_event_type" ON "analytics_events" USING btree ("event_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_analytics_created_at" ON "analytics_events" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_analytics_session_id" ON "analytics_events" USING btree ("session_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_metrics_date_type" ON "analytics_metrics" USING btree ("metric_date","metric_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_sessions_user_id" ON "analytics_sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_sessions_started_at" ON "analytics_sessions" USING btree ("started_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_auth_sessions_user_id" ON "auth_sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_auth_sessions_expires_at" ON "auth_sessions" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_exec_rule" ON "automation_executions" USING btree ("rule_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_exec_user" ON "automation_executions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_exec_status" ON "automation_executions" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_exec_scheduled" ON "automation_executions" USING btree ("scheduled_for");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_rules_user" ON "automation_rules" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_rules_active" ON "automation_rules" USING btree ("is_active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_automation_rules_trigger" ON "automation_rules" USING btree ("trigger_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_bas_user_period" ON "bas_reports" USING btree ("user_id","period_end");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_business_metrics_user_date" ON "business_metrics" USING btree ("user_id","metric_date");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_events_user" ON "calendar_events" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_events_start" ON "calendar_events" USING btree ("start_time");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_events_job" ON "calendar_events" USING btree ("job_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_events_google" ON "calendar_events" USING btree ("google_event_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_events_outlook" ON "calendar_events" USING btree ("outlook_event_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_calendar_sync_user" ON "calendar_sync_settings" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_customer_tokens_hash" ON "customer_portal_tokens" USING btree ("token_hash");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_customer_tokens_email" ON "customer_portal_tokens" USING btree ("customer_email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_customer_tokens_expires" ON "customer_portal_tokens" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_doc_access_document" ON "document_access_logs" USING btree ("document_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_doc_access_user" ON "document_access_logs" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_doc_access_time" ON "document_access_logs" USING btree ("accessed_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_user" ON "documents" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_job" ON "documents" USING btree ("job_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_invoice" ON "documents" USING btree ("invoice_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_quote" ON "documents" USING btree ("quote_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_type" ON "documents" USING btree ("document_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_documents_created" ON "documents" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_idempotency_scope" ON "idempotency_keys" USING btree ("scope","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_idempotency_expires" ON "idempotency_keys" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_invoices_user_id" ON "invoices" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_invoices_status" ON "invoices" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_invoices_user_status_date" ON "invoices" USING btree ("user_id","status","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_invoices_stripe_payment_intent" ON "invoices" USING btree ("stripe_payment_intent_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_magic_tokens_hash" ON "magic_link_tokens" USING btree ("token_hash");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_magic_tokens_email" ON "magic_link_tokens" USING btree ("email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_magic_tokens_expires_at" ON "magic_link_tokens" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "user_org_idx" ON "organization_users" USING btree ("user_id","organization_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_quotes_user_id" ON "quotes" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_quotes_status" ON "quotes" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_quotes_customer_email" ON "quotes" USING btree ("customer_email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_quotes_user_status_date" ON "quotes" USING btree ("user_id","status","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_review_requests_user" ON "review_requests" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_review_requests_job" ON "review_requests" USING btree ("job_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_review_requests_status" ON "review_requests" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "sessions" USING btree ("expire");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_tax_categories_category" ON "tax_categories" USING btree ("category");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_tax_deductions_user_status" ON "tax_deductions" USING btree ("user_id","status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_invites_owner" ON "team_invitations" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_invites_email" ON "team_invitations" USING btree ("email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_invites_token_hash" ON "team_invitations" USING btree ("token_hash");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_invites_status" ON "team_invitations" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_members_owner" ON "team_members" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_members_member" ON "team_members" USING btree ("member_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_members_status" ON "team_members" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_team_members_unique" ON "team_members" USING btree ("owner_id","member_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_webhook_events_status" ON "webhook_events" USING btree ("status","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_webhook_events_provider_type" ON "webhook_events" USING btree ("provider","event_type");
