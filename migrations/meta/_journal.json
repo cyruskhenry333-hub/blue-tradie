@@ -8,6 +8,13 @@
       "when": 1762676672312,
       "tag": "0000_motionless_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1736819400000,
+      "tag": "0001_create_token_ledger",
+      "breakpoints": true
     }
   ]
 }
