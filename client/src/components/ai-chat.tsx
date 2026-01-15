@@ -69,9 +69,16 @@ export default function AiChat({ agentType }: AiChatProps) {
       setSuggestions(response.suggestions || []);
     },
     onError: (error: Error) => {
+      console.error('[AiChat] Mutation error:', error);
+
+      // Show specific error message for timeout vs other errors
+      const isTimeout = error.message?.includes('timeout') || error.message?.includes('timed out');
+
       toast({
-        title: "Chat Error",
-        description: "Failed to send message. Please try again.",
+        title: isTimeout ? "Request Timed Out" : "Chat Error",
+        description: isTimeout
+          ? "The request took too long. Please try again with a shorter message or try again later."
+          : error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     },

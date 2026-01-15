@@ -11,16 +11,36 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  timeoutMs: number = 60000, // 60 second default timeout
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    console.error(`[apiRequest] Request to ${url} timed out after ${timeoutMs}ms`);
+    abortController.abort();
+  }, timeoutMs);
 
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: abortController.signal,
+    });
+
+    clearTimeout(timeoutId);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    // Provide clear timeout error message
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeoutMs / 1000} seconds. Please try again.`);
+    }
+
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

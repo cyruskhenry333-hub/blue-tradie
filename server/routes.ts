@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { randomUUID } from "crypto";
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -2647,16 +2648,23 @@ What would you like to know more about?`;
 
   // Chat routes
   app.post('/api/chat', isSimpleAuthenticated, async (req: any, res) => {
+    const requestId = randomUUID();
+    const startTime = Date.now();
+
     try {
       const userId = req.user.claims.sub;
       const { agentType, message, tone = "casual" } = req.body;
 
+      console.log(`[Chat ${requestId}] START - userId=${userId}, agent=${agentType}, messageLen=${message?.length || 0}`);
+
       // Get user info for region context and personalization
+      console.log(`[Chat ${requestId}] Fetching user info...`);
       const user = await storage.getUser(userId);
       const userCountry = user?.country || "Australia";
       const userTone = user?.tonePreference || tone;
 
       // Get chat history for context
+      console.log(`[Chat ${requestId}] Fetching chat history...`);
       const history = await storage.getChatHistory(userId, agentType, 10);
       const chatHistory = history.reverse().map(msg => ({
         role: msg.role as 'user' | 'assistant',
@@ -2664,6 +2672,7 @@ What would you like to know more about?`;
       }));
 
       // Save user message
+      console.log(`[Chat ${requestId}] Saving user message...`);
       await storage.createChatMessage({
         userId,
         agentType,
@@ -2671,15 +2680,45 @@ What would you like to know more about?`;
         content: message
       });
 
-      // Use hybrid AI system for response generation
+      // Use hybrid AI system for response generation with timeout
       const messages = [
         ...chatHistory,
         { role: 'user' as const, content: message }
       ];
 
-      const aiResponse = await aiService.chat(userId, messages, agentType);
+      console.log(`[Chat ${requestId}] Calling aiService.chat() with 45s timeout...`);
+
+      // Create abort controller for timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.error(`[Chat ${requestId}] TIMEOUT after 45s - aborting AI call`);
+        abortController.abort();
+      }, 45000); // 45 second timeout
+
+      let aiResponse;
+      try {
+        // Race between AI call and timeout
+        aiResponse = await Promise.race([
+          aiService.chat(userId, messages, agentType),
+          new Promise((_, reject) => {
+            abortController.signal.addEventListener('abort', () => {
+              reject(new Error('AI_REQUEST_TIMEOUT'));
+            });
+          })
+        ]);
+        clearTimeout(timeoutId);
+        console.log(`[Chat ${requestId}] aiService.chat() completed - source=${aiResponse.source}, tokens=${aiResponse.tokens_used}`);
+      } catch (aiError: any) {
+        clearTimeout(timeoutId);
+        if (aiError.message === 'AI_REQUEST_TIMEOUT') {
+          console.error(`[Chat ${requestId}] AI request timed out after 45s`);
+          throw new Error('AI request timed out. Please try again.');
+        }
+        throw aiError;
+      }
 
       // Save AI response
+      console.log(`[Chat ${requestId}] Saving AI response...`);
       await storage.createChatMessage({
         userId,
         agentType,
@@ -2688,9 +2727,11 @@ What would you like to know more about?`;
       });
 
       // Mark first AI chat milestone as completed
+      console.log(`[Chat ${requestId}] Marking journey milestone...`);
       await JourneyTracker.markFirstAiChatComplete(userId);
 
       // Track analytics event
+      console.log(`[Chat ${requestId}] Tracking analytics...`);
       await analyticsService.trackEvent({
         userId,
         eventType: 'ai_chat',
@@ -2716,10 +2757,21 @@ What would you like to know more about?`;
         timestamp: new Date().toISOString()
       };
 
+      const duration = Date.now() - startTime;
+      console.log(`[Chat ${requestId}] SUCCESS - duration=${duration}ms, responseLen=${aiResponse.content.length}`);
+
       res.json(response);
-    } catch (error) {
-      console.error("Error in chat:", error);
-      res.status(500).json({ message: "Failed to process chat message" });
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`[Chat ${requestId}] ERROR after ${duration}ms:`, error?.message || error);
+      console.error(`[Chat ${requestId}] Stack:`, error?.stack);
+
+      // Return user-friendly error message
+      const errorMessage = error?.message?.includes('timeout') || error?.message?.includes('TIMEOUT')
+        ? 'Request timed out. Please try again.'
+        : 'Failed to process chat message';
+
+      res.status(error?.message?.includes('timeout') ? 504 : 500).json({ message: errorMessage });
     }
   });
 
