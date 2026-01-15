@@ -3,6 +3,7 @@ import { db } from '../db';
 import { aiResponses, tokenUsage, users, type User } from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { tokenLedgerService } from './tokenLedgerService';
+import { getAIClient, generateRequestId } from '../ai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -141,7 +142,12 @@ export class AIService {
       }
 
       return bestMatch;
-    } catch (error) {
+    } catch (error: any) {
+      // Defensive: if ai_responses table doesn't exist (42P01), treat as cache miss
+      if (error?.code === '42P01') {
+        console.warn('[AIService] ai_responses table does not exist - treating as cache miss. Run migrations to create table.');
+        return null;
+      }
       console.error('Error finding cached response:', error);
       return null;
     }
@@ -149,15 +155,16 @@ export class AIService {
 
   /**
    * Call OpenAI API with agent-specific system prompts
+   * Phase 1: Now uses AIClient for reliability (timeout, retry, error handling)
    */
   private async callOpenAI(messages: ChatMessage[], agentType: string): Promise<AIResponse> {
     const systemPrompts = {
       accountant: "You are Blue Tradie's AI Accountant 📊 Direct, practical, focused on AU/NZ tax law. Keep responses SHORT and actionable. NO asterisks. Always end with a clear next step or question. Be helpful, not lecture-heavy.",
-      
+
       marketer: "You are Blue Tradie's AI Marketing specialist 📢 Enthusiastic, creative, understand tradies. Keep responses SHORT and practical. NO asterisks. Use emojis naturally. Always end with ONE actionable tip or question. Be energetic but concise.",
-      
+
       business_coach: "You are Blue Tradie's AI Business Coach 🚀 You're energetic, practical, and understand the tradie lifestyle! Keep responses SHORT (1-2 sentences max), friendly, and action-focused. Use emojis naturally but sparingly. NO asterisks for emphasis. Always end with ONE clear question or next step. Be conversational, not content-heavy.",
-      
+
       legal: "You are Blue Tradie's AI Legal advisor ⚖️ Careful, thorough, AU/NZ business law focused. Keep responses SHORT and clear. NO asterisks. Always end with a clear next step. Recommend lawyer consultation when needed. Be helpful, not overwhelming."
     };
 
@@ -167,24 +174,31 @@ export class AIService {
     };
 
     try {
-      const completion = await openai.chat.completions.create({
+      // Use new AIClient for reliability (timeout, retry, error handling)
+      const aiClient = getAIClient();
+      const aiResponse = await aiClient.chat({
+        requestId: generateRequestId(),
         model: 'gpt-4o-mini', // Using GPT-4o-mini for cost efficiency
-        messages: [systemMessage, ...messages],
-        max_tokens: 200, // Shorter, more focused responses
+        messages: [systemMessage, ...messages].map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+        maxTokens: 200, // Shorter, more focused responses
         temperature: 0.8, // More personality and natural flow
+        metadata: { agentType }, // For logging context
       });
 
-      let response = completion.choices[0]?.message?.content || '';
-      
+      let response = aiResponse.content;
+
       // Clean up response: remove excessive asterisks and formatting issues
       response = response
         .replace(/\*{2,}/g, '') // Remove multiple asterisks
-        .replace(/\*([^*]+)\*/g, '$1') // Remove single asterisk emphasis 
+        .replace(/\*([^*]+)\*/g, '$1') // Remove single asterisk emphasis
         .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
         .trim();
-      
-      const tokensUsed = completion.usage?.total_tokens || 0;
-      
+
+      const tokensUsed = aiResponse.usage.totalTokens;
+
       // Calculate cost in AUD (GPT-4o-mini: ~$0.60 per 1M tokens + 20% markup)
       const costUsd = (tokensUsed / 1000000) * 0.60;
       const costAud = costUsd * 1.52 * 1.20; // USD to AUD with 20% markup

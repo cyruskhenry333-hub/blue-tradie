@@ -80,7 +80,12 @@ export class AnalyticsService {
 
       console.log(`[ANALYTICS] Tracked event: ${eventType} (user: ${userId || 'anonymous'})`);
       return event;
-    } catch (error) {
+    } catch (error: any) {
+      // Defensive: if analytics_events table doesn't exist (42P01), fail gracefully
+      if (error?.code === '42P01') {
+        console.warn('[ANALYTICS] analytics_events table does not exist - skipping event tracking. Run migrations to create table.');
+        return null;
+      }
       console.error('[ANALYTICS] Error tracking event:', error);
       return null;
     }
@@ -111,7 +116,12 @@ export class AnalyticsService {
 
       console.log(`[ANALYTICS] Started session ${sessionId} for user ${userId}`);
       return sessionId;
-    } catch (error) {
+    } catch (error: any) {
+      // Defensive: if analytics_sessions table doesn't exist (42P01), fail gracefully
+      if (error?.code === '42P01') {
+        console.warn('[ANALYTICS] analytics_sessions table does not exist - using fallback session ID. Run migrations to create table.');
+        return `sess-fallback-${Date.now()}`;
+      }
       console.error('[ANALYTICS] Error starting session:', error);
       // Return a fallback session ID even if insert fails
       return `sess-fallback-${Date.now()}`;
