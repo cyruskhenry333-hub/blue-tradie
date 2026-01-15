@@ -77,7 +77,7 @@ export class AIService {
       const provisionStartTime = Date.now();
       provision = await tokenLedgerService.provisionTokens(userId, estimatedTokens, {
         advisor: agentType,
-      });
+      }, reqId);
       console.log(`[AIService ${reqId}] Step 2: Tokens provisioned - took ${Date.now() - provisionStartTime}ms, provisionId=${provision.provisionId}`);
     } catch (error: any) {
       console.error(`[AIService ${reqId}] Step 2: Provision failed - ${error.message}`);
@@ -104,7 +104,8 @@ export class AIService {
           model: 'gpt-4o-mini',
           promptTokens: aiResponse.tokens_used, // Simplified - you can track prompt/completion separately
           completionTokens: 0,
-        }
+        },
+        reqId
       );
       console.log(`[AIService ${reqId}] Step 4: Reconciliation complete - took ${Date.now() - reconcileStartTime}ms`);
 
@@ -126,7 +127,8 @@ export class AIService {
       await tokenLedgerService.rollbackProvision(
         provision.provisionId,
         provision.transactionId,
-        error.message || 'OpenAI API call failed'
+        error.message || 'OpenAI API call failed',
+        reqId
       );
       console.log(`[AIService ${reqId}] Step 6: Rollback complete - took ${Date.now() - rollbackStartTime}ms`);
 
