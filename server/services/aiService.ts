@@ -3,7 +3,6 @@ import { db } from '../db';
 import { aiResponses, tokenUsage, users, type User } from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { tokenLedgerService } from './tokenLedgerService';
-import { getAIClient, generateRequestId } from '../ai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -155,7 +154,6 @@ export class AIService {
 
   /**
    * Call OpenAI API with agent-specific system prompts
-   * Phase 1: Now uses AIClient for reliability (timeout, retry, error handling)
    */
   private async callOpenAI(messages: ChatMessage[], agentType: string): Promise<AIResponse> {
     const systemPrompts = {
@@ -174,21 +172,14 @@ export class AIService {
     };
 
     try {
-      // Use new AIClient for reliability (timeout, retry, error handling)
-      const aiClient = getAIClient();
-      const aiResponse = await aiClient.chat({
-        requestId: generateRequestId(),
+      const completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini', // Using GPT-4o-mini for cost efficiency
-        messages: [systemMessage, ...messages].map(m => ({
-          role: m.role,
-          content: m.content,
-        })),
-        maxTokens: 200, // Shorter, more focused responses
+        messages: [systemMessage, ...messages],
+        max_tokens: 200, // Shorter, more focused responses
         temperature: 0.8, // More personality and natural flow
-        metadata: { agentType }, // For logging context
       });
 
-      let response = aiResponse.content;
+      let response = completion.choices[0]?.message?.content || '';
 
       // Clean up response: remove excessive asterisks and formatting issues
       response = response
@@ -197,7 +188,7 @@ export class AIService {
         .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
         .trim();
 
-      const tokensUsed = aiResponse.usage.totalTokens;
+      const tokensUsed = completion.usage?.total_tokens || 0;
 
       // Calculate cost in AUD (GPT-4o-mini: ~$0.60 per 1M tokens + 20% markup)
       const costUsd = (tokensUsed / 1000000) * 0.60;
