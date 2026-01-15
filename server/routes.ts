@@ -2691,28 +2691,26 @@ What would you like to know more about?`;
       // Create abort controller for timeout
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.error(`[Chat ${requestId}] TIMEOUT after 45s - aborting AI call`);
+        console.error(`[Chat ${requestId}] TIMEOUT after 45s - aborting AI call via AbortController`);
         abortController.abort();
       }, 45000); // 45 second timeout
 
       let aiResponse;
       try {
-        // Race between AI call and timeout
-        aiResponse = await Promise.race([
-          aiService.chat(userId, messages, agentType),
-          new Promise((_, reject) => {
-            abortController.signal.addEventListener('abort', () => {
-              reject(new Error('AI_REQUEST_TIMEOUT'));
-            });
-          })
-        ]);
+        // Pass abortSignal to aiService.chat so it can cancel the OpenAI request
+        aiResponse = await aiService.chat(userId, messages, agentType, requestId, abortController.signal);
         clearTimeout(timeoutId);
         console.log(`[Chat ${requestId}] aiService.chat() completed - source=${aiResponse.source}, tokens=${aiResponse.tokens_used}`);
       } catch (aiError: any) {
         clearTimeout(timeoutId);
-        if (aiError.message === 'AI_REQUEST_TIMEOUT') {
-          console.error(`[Chat ${requestId}] AI request timed out after 45s`);
-          throw new Error('AI request timed out. Please try again.');
+
+        // Check if this was an abort/timeout error
+        if (aiError.name === 'AbortError' || aiError.message?.includes('abort') || aiError.message?.includes('cancel')) {
+          console.error(`[Chat ${requestId}] AI request aborted/timed out after 45s`);
+          const timeoutError: any = new Error('AI request timed out. Please try again.');
+          timeoutError.code = 'AI_TIMEOUT';
+          timeoutError.requestId = requestId;
+          throw timeoutError;
         }
         throw aiError;
       }
@@ -2764,14 +2762,20 @@ What would you like to know more about?`;
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.error(`[Chat ${requestId}] ERROR after ${duration}ms:`, error?.message || error);
+      console.error(`[Chat ${requestId}] Error code:`, error?.code);
       console.error(`[Chat ${requestId}] Stack:`, error?.stack);
 
-      // Return user-friendly error message
-      const errorMessage = error?.message?.includes('timeout') || error?.message?.includes('TIMEOUT')
-        ? 'Request timed out. Please try again.'
-        : 'Failed to process chat message';
+      // Check if this is a timeout error
+      if (error?.code === 'AI_TIMEOUT' || error?.message?.includes('timeout') || error?.message?.includes('timed out')) {
+        return res.status(504).json({
+          error: 'AI_TIMEOUT',
+          message: 'AI request timed out. Please try again.',
+          requestId: requestId
+        });
+      }
 
-      res.status(error?.message?.includes('timeout') ? 504 : 500).json({ message: errorMessage });
+      // Return generic error
+      res.status(500).json({ message: error?.message || 'Failed to process chat message' });
     }
   });
 
