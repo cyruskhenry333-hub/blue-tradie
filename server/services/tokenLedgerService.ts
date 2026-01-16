@@ -1,4 +1,4 @@
-import { db, pool } from '../db';
+import { db, pool, getClientWithTimeouts } from '../db';
 import { tokenLedger, tokenAlerts, users, type TokenLedgerEntry } from '@shared/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
@@ -128,8 +128,12 @@ export class TokenLedgerService {
     const transactionId = this.generateTraceId();
 
     // Use raw SQL transaction with SELECT FOR UPDATE to prevent race conditions
+    console.log(`[TokenLedger ${reqId}] provisionTokens: Acquiring client with guaranteed timeouts...`);
+    const clientStartTime = Date.now();
+    const client = await getClientWithTimeouts();
+    this.logTiming(reqId, 'provisionTokens: Acquired client with timeouts', clientStartTime);
+
     console.log(`[TokenLedger ${reqId}] provisionTokens: Starting transaction with row lock...`);
-    const client = await pool.connect();
 
     try {
       const txStartTime = Date.now();

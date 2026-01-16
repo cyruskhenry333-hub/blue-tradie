@@ -5,6 +5,17 @@ import { aiResponses, tokenUsage, users, type User } from '../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { tokenLedgerService } from './tokenLedgerService';
 
+// Feature flag: Disable token ledger for debugging/testing
+// Set DISABLE_TOKEN_LEDGER=true to bypass token provisioning/reconciliation
+const DISABLE_TOKEN_LEDGER = process.env.DISABLE_TOKEN_LEDGER === 'true';
+
+// Log feature flag status at startup
+if (DISABLE_TOKEN_LEDGER) {
+  console.warn('[AIService] ⚠️  Token ledger is DISABLED (DISABLE_TOKEN_LEDGER=true) - AI calls will bypass token accounting');
+} else {
+  console.log('[AIService] Token ledger is ENABLED - AI calls will be tracked and limited');
+}
+
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -69,20 +80,26 @@ export class AIService {
     }
 
     // Step 2: Provision tokens (pessimistic lock)
-    console.log(`[AIService ${reqId}] Step 2: Provisioning tokens (estimated: 150)...`);
-    const estimatedTokens = 150; // Reasonable estimate for gpt-4o-mini with max_tokens=200
-    let provision;
+    // Skip if DISABLE_TOKEN_LEDGER feature flag is enabled
+    let provision: { provisionId: number; transactionId: string; balanceAfter: number } | null = null;
 
-    try {
-      const provisionStartTime = Date.now();
-      provision = await tokenLedgerService.provisionTokens(userId, estimatedTokens, {
-        advisor: agentType,
-      }, reqId);
-      console.log(`[AIService ${reqId}] Step 2: Tokens provisioned - took ${Date.now() - provisionStartTime}ms, provisionId=${provision.provisionId}`);
-    } catch (error: any) {
-      console.error(`[AIService ${reqId}] Step 2: Provision failed - ${error.message}`);
-      // Insufficient balance
-      throw new Error(error.message || 'Unable to provision tokens. Please check your balance.');
+    if (DISABLE_TOKEN_LEDGER) {
+      console.log(`[AIService ${reqId}] Step 2: SKIPPED (DISABLE_TOKEN_LEDGER=true) - Token ledger disabled`);
+    } else {
+      console.log(`[AIService ${reqId}] Step 2: Provisioning tokens (estimated: 150)...`);
+      const estimatedTokens = 150; // Reasonable estimate for gpt-4o-mini with max_tokens=200
+
+      try {
+        const provisionStartTime = Date.now();
+        provision = await tokenLedgerService.provisionTokens(userId, estimatedTokens, {
+          advisor: agentType,
+        }, reqId);
+        console.log(`[AIService ${reqId}] Step 2: Tokens provisioned - took ${Date.now() - provisionStartTime}ms, provisionId=${provision.provisionId}`);
+      } catch (error: any) {
+        console.error(`[AIService ${reqId}] Step 2: Provision failed - ${error.message}`);
+        // Insufficient balance
+        throw new Error(error.message || 'Unable to provision tokens. Please check your balance.');
+      }
     }
 
     // Step 3: Call OpenAI API (wrapped in try/catch for rollback)
@@ -94,20 +111,24 @@ export class AIService {
       console.log(`[AIService ${reqId}] Step 3: OpenAI call complete - took ${Date.now() - openaiStartTime}ms, tokens=${aiResponse.tokens_used}`);
 
       // Step 4: Reconcile with actual usage
-      console.log(`[AIService ${reqId}] Step 4: Reconciling tokens...`);
-      const reconcileStartTime = Date.now();
-      await tokenLedgerService.reconcileTokens(
-        provision.provisionId,
-        provision.transactionId,
-        aiResponse.tokens_used,
-        {
-          model: 'gpt-4o-mini',
-          promptTokens: aiResponse.tokens_used, // Simplified - you can track prompt/completion separately
-          completionTokens: 0,
-        },
-        reqId
-      );
-      console.log(`[AIService ${reqId}] Step 4: Reconciliation complete - took ${Date.now() - reconcileStartTime}ms`);
+      if (DISABLE_TOKEN_LEDGER || !provision) {
+        console.log(`[AIService ${reqId}] Step 4: SKIPPED (token ledger disabled or no provision)`);
+      } else {
+        console.log(`[AIService ${reqId}] Step 4: Reconciling tokens...`);
+        const reconcileStartTime = Date.now();
+        await tokenLedgerService.reconcileTokens(
+          provision.provisionId,
+          provision.transactionId,
+          aiResponse.tokens_used,
+          {
+            model: 'gpt-4o-mini',
+            promptTokens: aiResponse.tokens_used, // Simplified - you can track prompt/completion separately
+            completionTokens: 0,
+          },
+          reqId
+        );
+        console.log(`[AIService ${reqId}] Step 4: Reconciliation complete - took ${Date.now() - reconcileStartTime}ms`);
+      }
 
       // Step 5: Save response to cache for future use
       console.log(`[AIService ${reqId}] Step 5: Caching response...`);
@@ -121,18 +142,24 @@ export class AIService {
     } catch (error: any) {
       console.error(`[AIService ${reqId}] ERROR in OpenAI call: ${error.message}`);
 
-      // Step 6: Rollback provision on error
-      console.log(`[AIService ${reqId}] Step 6: Rolling back provision...`);
-      const rollbackStartTime = Date.now();
-      await tokenLedgerService.rollbackProvision(
-        provision.provisionId,
-        provision.transactionId,
-        error.message || 'OpenAI API call failed',
-        reqId
-      );
-      console.log(`[AIService ${reqId}] Step 6: Rollback complete - took ${Date.now() - rollbackStartTime}ms`);
+      // Step 6: Rollback provision on error (only if token ledger is enabled)
+      if (DISABLE_TOKEN_LEDGER || !provision) {
+        console.log(`[AIService ${reqId}] Step 6: SKIPPED (token ledger disabled or no provision to rollback)`);
+      } else {
+        console.log(`[AIService ${reqId}] Step 6: Rolling back provision...`);
+        const rollbackStartTime = Date.now();
+        await tokenLedgerService.rollbackProvision(
+          provision.provisionId,
+          provision.transactionId,
+          error.message || 'OpenAI API call failed',
+          reqId
+        );
+        console.log(`[AIService ${reqId}] Step 6: Rollback complete - took ${Date.now() - rollbackStartTime}ms`);
+      }
 
-      throw new Error('Failed to generate AI response. Your tokens have been refunded. Please try again.');
+      throw new Error(DISABLE_TOKEN_LEDGER
+        ? 'Failed to generate AI response. Please try again.'
+        : 'Failed to generate AI response. Your tokens have been refunded. Please try again.');
     }
   }
 
